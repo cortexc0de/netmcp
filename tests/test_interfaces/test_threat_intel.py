@@ -1,11 +1,8 @@
 """Tests for ThreatIntelInterface."""
 
-import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-import pytest_asyncio
-import httpx
 
 from netmcp.interfaces.threat_intel import ThreatIntelInterface
 

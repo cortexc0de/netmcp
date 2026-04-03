@@ -1,13 +1,10 @@
 """Tests for TsharkInterface."""
 
-import asyncio
 import json
 import subprocess
-from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-import pytest_asyncio
 
 from netmcp.interfaces.tshark import TsharkInterface, TsharkNotFoundError
 
@@ -84,7 +81,7 @@ class TestCaptureLive:
                 output_file.write_bytes(b"fake pcap")
 
                 iface = TsharkInterface()
-                result = await iface.capture_live(
+                await iface.capture_live(
                     interface="eth0",
                     bpf_filter="tcp port 80",
                     packet_count=10,
@@ -157,7 +154,7 @@ class TestProtocolStats:
 ===================================================================
 Protocol Hierarchy Statistics
 
-Filter: 
+Filter:
 
 eth                                    frames:100 bytes:12000
   ip                                   frames:90 bytes:10800

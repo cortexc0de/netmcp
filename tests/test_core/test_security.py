@@ -1,10 +1,6 @@
 """Tests for SecurityValidator."""
 
-import os
-import time
-import threading
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -235,23 +231,23 @@ class TestSanitizeFilepath:
 
 class TestCheckRateLimit:
     def test_allows_within_limit(self, validator):
-        for i in range(10):
+        for _i in range(10):
             assert validator.check_rate_limit("nmap_scan") is True
 
     def test_blocks_over_limit(self, validator):
-        for i in range(10):
+        for _i in range(10):
             validator.check_rate_limit("nmap_scan")
         assert validator.check_rate_limit("nmap_scan") is False
 
     def test_different_operations_independent(self, validator):
-        for i in range(10):
+        for _i in range(10):
             validator.check_rate_limit("scan_a")
         # scan_b should still be allowed
         assert validator.check_rate_limit("scan_b") is True
 
     def test_sliding_window(self, validator):
         # Fill up limit
-        for i in range(10):
+        for _i in range(10):
             validator.check_rate_limit("test_op")
         # Should be blocked
         assert validator.check_rate_limit("test_op") is False
@@ -262,7 +258,7 @@ class TestCheckRateLimit:
         assert validator.check_rate_limit("test_op") is True
 
     def test_custom_limit(self, validator):
-        for i in range(3):
+        for _i in range(3):
             assert validator.check_rate_limit("limited", max_ops=3, window_seconds=60) is True
         assert validator.check_rate_limit("limited", max_ops=3, window_seconds=60) is False
 

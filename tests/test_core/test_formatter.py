@@ -2,7 +2,6 @@
 
 import json
 import subprocess
-from unittest.mock import patch
 
 import pytest
 
@@ -41,7 +40,7 @@ class TestFormatJson:
 
     def test_non_serializable_raises(self, fmt):
         with pytest.raises(ValueError, match="not JSON serializable"):
-            fmt.format_json(set([1, 2, 3]))
+            fmt.format_json({1, 2, 3})
 
 
 class TestFormatText:

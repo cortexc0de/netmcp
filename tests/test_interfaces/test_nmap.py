@@ -1,12 +1,10 @@
 """Tests for NmapInterface."""
 
-import asyncio
-import subprocess
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from netmcp.interfaces.nmap import NmapInterface, NmapNotFoundError
+from netmcp.interfaces.nmap import NmapInterface
 
 
 class TestNmapInit:
@@ -24,14 +22,6 @@ class TestNmapInit:
 class TestPortScan:
     @pytest.mark.asyncio
     async def test_connect_scan(self):
-        nmap_output = """
-# Nmap 7.94 scan initiated
-Nmap scan report for 127.0.0.1
-Host is up (0.00032s latency).
-PORT   STATE SERVICE
-22/tcp open  ssh
-80/tcp open  http
-"""
         with patch("shutil.which", return_value="/usr/bin/nmap"):
             with patch("nmap.PortScanner") as mock_ps:
                 mock_scanner = MagicMock()
