@@ -1,46 +1,12 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-*.retry
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Ruff
-.ruff_cache/
-
-# mypy
-.mypy_cache/
-
-# Git
-.git/
-.gitignore
-
-# Docker
-Dockerfile
-.dockerignore
-
-# CI
-.github/
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+htmlcov
+.ruff_cache
+tests/
+docs/
+*.md
+!README.md

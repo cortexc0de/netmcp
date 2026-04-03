@@ -5,10 +5,12 @@
 **Professional-grade network analysis MCP server — Wireshark/TShark + Nmap + Threat Intelligence**
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/cortexc0de/netmcp/ci.yml?branch=main&label=tests&style=flat-square)](https://github.com/cortexc0de/netmcp/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square)](https://github.com/cortexc0de/netmcp)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen?style=flat-square)](https://github.com/cortexc0de/netmcp)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/cortexc0de/netmcp/codeql.yml?branch=main&label=CodeQL&style=flat-square)](https://github.com/cortexc0de/netmcp/actions/workflows/codeql.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/netmcp?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/netmcp/)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?style=flat-square&logo=docker&logoColor=white)](https://ghcr.io/cortexc0de/netmcp)
 [![MCP](https://img.shields.io/badge/MCP-Server-7C3AED?style=flat-square)](https://modelcontextprotocol.io/)
 
 NetMCP bridges the gap between raw network data and AI comprehension. It gives Claude, Cursor, and any MCP-compliant client the ability to capture packets, scan networks, detect threats, and extract credentials — all through natural language.
@@ -64,7 +66,7 @@ That's it. The server starts on **stdio** transport by default, ready for any MC
 
 ## 📊 Tool Categories
 
-NetMCP provides **40 tools** across **9 categories**, plus **3 resources** and **5 prompts**:
+NetMCP provides **48 tools** across **9 categories**, plus **3 resources** and **5 prompts**:
 
 | Category | Tools | Description |
 |----------|-------|-------------|
@@ -297,7 +299,7 @@ src/netmcp/
 │   ├── tshark.py            # TShark async CLI wrapper
 │   ├── nmap.py              # python-nmap wrapper
 │   └── threat_intel.py      # URLhaus + AbuseIPDB clients
-├── tools/                   # 40 MCP tools across 11 modules
+├── tools/                   # 48 MCP tools across 11 modules
 ├── resources/               # 3 MCP resources
 └── prompts/                 # 5 MCP prompts
 ```
