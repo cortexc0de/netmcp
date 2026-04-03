@@ -2,8 +2,8 @@
 
 import asyncio
 import time
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
 import httpx
 
@@ -38,8 +38,8 @@ class ThreatIntelInterface:
 
     def __init__(
         self,
-        abuseipdb_key: Optional[str] = None,
-        providers: Optional[list[str]] = None,
+        abuseipdb_key: str | None = None,
+        providers: list[str] | None = None,
         cache_ttl: int = CACHE_TTL,
     ) -> None:
         self.abuseipdb_key = abuseipdb_key
@@ -61,7 +61,7 @@ class ThreatIntelInterface:
 
     # ── Cache helpers ───────────────────────────────────────────────────
 
-    def _get_cache(self, key: str) -> Optional[Any]:
+    def _get_cache(self, key: str) -> Any | None:
         """Get cached result if not expired."""
         entry = self._cache.get(key)
         if entry and (time.monotonic() - entry.timestamp) < self.cache_ttl:
@@ -181,7 +181,7 @@ class ThreatIntelInterface:
     async def check_ip(
         self,
         ip: str,
-        providers: Optional[list[str]] = None,
+        providers: list[str] | None = None,
     ) -> dict:
         """Check an IP against configured threat intelligence providers.
 
@@ -240,7 +240,7 @@ class ThreatIntelInterface:
         self,
         filepath: str,
         tshark: Any,
-        providers: Optional[list[str]] = None,
+        providers: list[str] | None = None,
     ) -> dict:
         """Extract all IPs from a PCAP file and check against threat feeds.
 
@@ -275,7 +275,7 @@ class ThreatIntelInterface:
             tasks = [self.check_ip(ip, providers) for ip in batch]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            for ip, result in zip(batch, batch_results):
+            for ip, result in zip(batch, batch_results, strict=False):
                 if isinstance(result, Exception):
                     ip_results[ip] = {"error": str(result)}
                 else:

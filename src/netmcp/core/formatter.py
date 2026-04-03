@@ -85,7 +85,7 @@ class OutputFormatter:
 
         lines = []
         # Header
-        lines.append(fmt.format(*[h for h in headers]))
+        lines.append(fmt.format(*list(headers)))
         # Separator
         lines.append("  ".join("-" * widths[h] for h in headers))
         # Rows
@@ -105,10 +105,7 @@ class OutputFormatter:
 
     def format_success(self, result: Any, title: str = "") -> dict:
         """Return standardized MCP success response."""
-        if isinstance(result, (dict, list)):
-            text = self.format_json(result)
-        else:
-            text = str(result)
+        text = self.format_json(result) if isinstance(result, (dict, list)) else str(result)
 
         if title:
             text = f"=== {title} ===\n{text}"

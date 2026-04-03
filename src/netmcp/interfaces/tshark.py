@@ -5,9 +5,9 @@ import json
 import re
 import shutil
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 class TsharkNotFoundError(Exception):
@@ -90,9 +90,9 @@ class TsharkInterface:
     All subprocess calls use shell=False with list-based arguments.
     """
 
-    def __init__(self, tshark_path: Optional[str] = None) -> None:
+    def __init__(self, tshark_path: str | None = None) -> None:
         self.tshark_path = tshark_path or find_tshark()
-        self._version: Optional[str] = None
+        self._version: str | None = None
 
     def __repr__(self) -> str:
         return f"TsharkInterface(path={self.tshark_path!r})"
@@ -106,7 +106,7 @@ class TsharkInterface:
         capture_output: bool = True,
     ) -> TsharkResult:
         """Run tshark with given arguments asynchronously."""
-        cmd = [self.tshark_path] + args
+        cmd = [self.tshark_path, *args]
 
         loop = asyncio.get_event_loop()
         try:
@@ -163,7 +163,7 @@ class TsharkInterface:
         bpf_filter: str = "",
         packet_count: int = 100,
         timeout: float = 30.0,
-        output_file: Optional[str] = None,
+        output_file: str | None = None,
     ) -> Path:
         """Capture live packets from a network interface.
 
@@ -177,8 +177,8 @@ class TsharkInterface:
         Returns:
             Path to the capture file
         """
-        import tempfile
         import os
+        import tempfile
 
         if output_file:
             out_path = Path(output_file)
@@ -351,7 +351,6 @@ class TsharkInterface:
 
         # Parse conversation table
         streams = []
-        in_table = False
         for line in result.stdout.split("\n"):
             line = line.strip()
             if "<->" in line:
@@ -376,7 +375,7 @@ class TsharkInterface:
         capinfos = shutil.which("capinfos")
         if capinfos:
             cmd = [capinfos, "-T", filepath]
-            loop = asyncio.get_event_loop()
+            asyncio.get_event_loop()
             result = await self._run_cmd(cmd, timeout=10.0)
             if result.returncode == 0:
                 return self._parse_capinfos(result.stdout)
@@ -458,6 +457,6 @@ class TsharkInterface:
             if not line.strip():
                 continue
             values = line.split("\t")
-            row = dict(zip(fields, values))
+            row = dict(zip(fields, values, strict=False))
             rows.append(row)
         return rows

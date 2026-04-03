@@ -4,7 +4,6 @@ import asyncio
 import shutil
 import subprocess
 from dataclasses import dataclass
-from typing import Optional
 
 try:
     import nmap
@@ -35,7 +34,7 @@ class NmapInterface:
 
     def __init__(self) -> None:
         self.available = shutil.which("nmap") is not None and _NMAP_AVAILABLE
-        self._scanner: Optional["nmap.PortScanner"] = None
+        self._scanner: nmap.PortScanner | None = None
 
     def __repr__(self) -> str:
         return f"NmapInterface(available={self.available})"
@@ -76,10 +75,10 @@ class NmapInterface:
                 raise RuntimeError(f"Nmap subprocess error: {e}")
 
         try:
-            raw = await asyncio.wait_for(loop.run_in_executor(None, _scan), timeout=timeout)
+            await asyncio.wait_for(loop.run_in_executor(None, _scan), timeout=timeout)
             # Return the full scan result
             return scanner.scan() if hasattr(scanner, "scan") else {}
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise TimeoutError(f"Nmap scan timed out after {timeout}s for {target}")
 
     # ── Port scanning ───────────────────────────────────────────────────
@@ -149,7 +148,7 @@ class NmapInterface:
         timeout: float = 600.0,
     ) -> dict:
         """Run NSE vulnerability scripts."""
-        args = f"--script vuln -T4"
+        args = "--script vuln -T4"
         if ports:
             args += f" -p {ports}"
         return await self._run_scan(target, args, timeout=timeout)

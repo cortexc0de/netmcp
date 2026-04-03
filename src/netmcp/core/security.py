@@ -2,12 +2,10 @@
 
 import os
 import re
-import time
 import threading
+import time
+from ipaddress import AddressValueError, NetmaskValueError, ip_address, ip_network
 from pathlib import Path
-from ipaddress import ip_address, ip_network, AddressValueError, NetmaskValueError
-from typing import Optional
-
 
 # Patterns for input validation
 _SHELL_META = re.compile(r'[;|&$`(){}!]')
