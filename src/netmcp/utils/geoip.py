@@ -2,7 +2,6 @@
 
 import asyncio
 import functools
-from typing import Optional
 
 try:
     from geolite2 import geolite2
@@ -12,7 +11,7 @@ except ImportError:
     _GEOLITE_AVAILABLE = False
 
 # Module-level singleton to avoid reopening database
-_reader: Optional[object] = None
+_reader: object | None = None
 
 
 def _get_reader():
