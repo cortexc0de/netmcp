@@ -1,5 +1,8 @@
 """PCAP analysis tools."""
 
+import json
+import shutil
+
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 
@@ -660,3 +663,237 @@ def register_analysis_tools(
             )
         except Exception as e:
             return fmt.format_error(e)
+
+    # ── Deep Packet Analysis ────────────────────────────────────────────
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Deep Packet Analysis",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def deep_packet_analysis(
+        file_path: str,
+        count: int = 100,
+        display_filter: str = "",
+    ) -> dict:
+        """Deep packet analysis with protocol breakdown, layer details, and markdown tables.
+
+        Args:
+            file_path: Path to PCAP/PCAPNG file
+            count: Maximum number of packets to analyze
+            display_filter: Optional Wireshark display filter
+        """
+        try:
+            if not sec.check_rate_limit("deep_packet_analysis"):
+                raise ValueError("Rate limit exceeded for deep_packet_analysis")
+
+            validated_path = sec.sanitize_filepath(file_path)
+
+            if display_filter:
+                sec.validate_display_filter(display_filter)
+
+            sec.audit_log("deep_packet_analysis", {
+                "filepath": str(validated_path),
+                "count": count,
+                "display_filter": display_filter or "(none)",
+            })
+
+            tshark_bin = shutil.which("tshark")
+            if not tshark_bin:
+                raise FileNotFoundError("tshark not found on PATH")
+
+            args = ["-r", str(validated_path), "-c", str(count), "-T", "json"]
+            if display_filter:
+                args.extend(["-Y", display_filter])
+
+            result = await tshark._run(args, timeout=120.0)
+
+            if result.returncode != 0:
+                raise RuntimeError(f"tshark failed (rc={result.returncode}): {result.stderr}")
+
+            try:
+                packets = json.loads(result.stdout) if result.stdout.strip() else []
+            except json.JSONDecodeError:
+                packets = []
+
+            if not packets:
+                return fmt.truncate_output(fmt.format_success(
+                    "## Глубокий анализ пакетов\n\nПакеты не найдены.",  # noqa: RUF001
+                    title="Deep Packet Analysis",
+                ))
+
+            # --- Extract data from packets ---
+            timestamps: list[float] = []
+            protocol_counts: dict[str, int] = {}
+            ip_pair_counts: dict[str, dict] = {}
+            layer_fields: dict[str, dict[str, int]] = {}
+            anomalies: list[dict] = []
+
+            for pkt in packets:
+                layers = pkt.get("_source", {}).get("layers", {})
+
+                # Timestamp
+                frame_layer = layers.get("frame", {})
+                epoch_str = frame_layer.get("frame.time_epoch", "")
+                if isinstance(epoch_str, list):
+                    epoch_str = epoch_str[0] if epoch_str else ""
+                try:
+                    timestamps.append(float(epoch_str))
+                except (ValueError, TypeError):
+                    pass
+
+                # Protocol from highest layer
+                protocols_str = frame_layer.get("frame.protocols", "")
+                if isinstance(protocols_str, list):
+                    protocols_str = protocols_str[0] if protocols_str else ""
+                if protocols_str:
+                    top_proto = protocols_str.split(":")[-1].upper()
+                    protocol_counts[top_proto] = protocol_counts.get(top_proto, 0) + 1
+
+                # Frame length
+                frame_len_str = frame_layer.get("frame.len", "0")
+                if isinstance(frame_len_str, list):
+                    frame_len_str = frame_len_str[0] if frame_len_str else "0"
+                try:
+                    frame_len = int(frame_len_str)
+                except (ValueError, TypeError):
+                    frame_len = 0
+
+                # IP pairs
+                ip_layer = layers.get("ip", {})
+                src_ip = ip_layer.get("ip.src", "")
+                dst_ip = ip_layer.get("ip.dst", "")
+                if isinstance(src_ip, list):
+                    src_ip = src_ip[0] if src_ip else ""
+                if isinstance(dst_ip, list):
+                    dst_ip = dst_ip[0] if dst_ip else ""
+                if src_ip and dst_ip:
+                    pair_key = f"{src_ip} -> {dst_ip}"
+                    if pair_key not in ip_pair_counts:
+                        ip_pair_counts[pair_key] = {"packets": 0, "bytes": 0}
+                    ip_pair_counts[pair_key]["packets"] += 1
+                    ip_pair_counts[pair_key]["bytes"] += frame_len
+
+                # Layer analysis: collect field names per protocol layer
+                for layer_name, layer_data in layers.items():
+                    if layer_name in ("frame", "_ws.expert"):
+                        continue
+                    if isinstance(layer_data, dict):
+                        if layer_name not in layer_fields:
+                            layer_fields[layer_name] = {}
+                        for field_name in layer_data:
+                            layer_fields[layer_name][field_name] = (
+                                layer_fields[layer_name].get(field_name, 0) + 1
+                            )
+
+                # Anomalies: retransmissions, errors, expert info
+                tcp_layer = layers.get("tcp", {})
+                tcp_analysis = tcp_layer.get("tcp.analysis", {})
+                if isinstance(tcp_analysis, dict):
+                    if tcp_analysis.get("tcp.analysis.retransmission"):
+                        frame_num = frame_layer.get("frame.number", "?")
+                        if isinstance(frame_num, list):
+                            frame_num = frame_num[0] if frame_num else "?"
+                        anomalies.append({
+                            "frame": frame_num,
+                            "type": "TCP Retransmission",
+                            "detail": f"{src_ip} -> {dst_ip}",
+                        })
+                    if tcp_analysis.get("tcp.analysis.duplicate_ack"):
+                        frame_num = frame_layer.get("frame.number", "?")
+                        if isinstance(frame_num, list):
+                            frame_num = frame_num[0] if frame_num else "?"
+                        anomalies.append({
+                            "frame": frame_num,
+                            "type": "Duplicate ACK",
+                            "detail": f"{src_ip} -> {dst_ip}",
+                        })
+
+                if "_ws.expert" in layers:
+                    frame_num = frame_layer.get("frame.number", "?")
+                    if isinstance(frame_num, list):
+                        frame_num = frame_num[0] if frame_num else "?"
+                    anomalies.append({
+                        "frame": frame_num,
+                        "type": "Expert Info",
+                        "detail": str(layers["_ws.expert"])[:120],
+                    })
+
+            # --- Build markdown report ---
+            lines: list[str] = ["## Глубокий анализ пакетов\n"]
+
+            # Summary
+            total = len(packets)
+            if timestamps:
+                ts_sorted = sorted(timestamps)
+                duration = ts_sorted[-1] - ts_sorted[0]
+                from datetime import UTC, datetime
+                first_ts = datetime.fromtimestamp(ts_sorted[0], tz=UTC).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                last_ts = datetime.fromtimestamp(ts_sorted[-1], tz=UTC).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            else:
+                duration = 0.0
+                first_ts = "N/A"
+                last_ts = "N/A"
+
+            lines.append("### Сводка")
+            lines.append("| Метрика | Значение |")
+            lines.append("|---------|----------|")
+            lines.append(f"| Всего пакетов | {total} |")  # noqa: RUF001
+            lines.append(f"| Время захвата | {duration:.2f}s |")
+            lines.append(f"| Первый пакет | {first_ts} |")
+            lines.append(f"| Последний пакет | {last_ts} |")
+            lines.append("")
+
+            # Protocol distribution
+            lines.append("### Распределение протоколов")
+            lines.append("| Протокол | Пакетов | % |")
+            lines.append("|----------|---------|---|")
+            sorted_protos = sorted(protocol_counts.items(), key=lambda x: -x[1])
+            for proto, cnt in sorted_protos:
+                pct = (cnt * 100 // total) if total else 0
+                lines.append(f"| {proto} | {cnt} | {pct}% |")
+            lines.append("")
+
+            # Top talkers
+            lines.append("### Топ отправителей")
+            lines.append("| IP | Пакетов | Байт |")
+            lines.append("|----|---------|------|")
+            sorted_pairs = sorted(ip_pair_counts.items(), key=lambda x: -x[1]["packets"])[:10]
+            for pair, info in sorted_pairs:
+                lines.append(f"| {pair} | {info['packets']} | {info['bytes']:,} |")
+            lines.append("")
+
+            # Layer analysis
+            if layer_fields:
+                lines.append("### Анализ уровней")
+                for lname, fields in sorted(layer_fields.items()):
+                    top_fields = sorted(fields.items(), key=lambda x: -x[1])[:10]
+                    lines.append(f"\n**{lname.upper()}** ({sum(fields.values())} полей)")
+                    lines.append("| Поле | Встречается |")
+                    lines.append("|------|-------------|")
+                    for fname, fcnt in top_fields:
+                        lines.append(f"| {fname} | {fcnt} |")
+                lines.append("")
+
+            # Anomalies
+            if anomalies:
+                lines.append("### Аномалии")
+                lines.append("| Кадр | Тип | Детали |")
+                lines.append("|------|-----|--------|")
+                for a in anomalies[:50]:
+                    lines.append(f"| {a['frame']} | {a['type']} | {a['detail']} |")
+            else:
+                lines.append("### Аномалии\n\nАномалий не обнаружено.")  # noqa: RUF001
+
+            md = "\n".join(lines)
+            return fmt.truncate_output(fmt.format_success(md, title="Deep Packet Analysis"))
+        except Exception as e:
+            return fmt.format_error(e, "NETMCP_004")

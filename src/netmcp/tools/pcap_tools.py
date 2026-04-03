@@ -1,7 +1,9 @@
 """PCAP manipulation tools (diff, merge, slice, decode)."""
 
 import asyncio
+import os
 import shutil
+import tempfile
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -12,6 +14,15 @@ from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
 
 _ALLOWED_OUTPUT_EXTENSIONS = {".pcap", ".pcapng"}
+
+_EDITCAP_FORMATS = {"pcap", "pcapng", "snoop", "btsnoop", "pcap-nsec"}
+_FORMAT_EXTENSIONS = {
+    "pcap": ".pcap",
+    "pcapng": ".pcapng",
+    "snoop": ".snoop",
+    "btsnoop": ".btsnoop",
+    "pcap-nsec": ".pcap",
+}
 
 
 def _validate_output_path(output_file: str) -> Path:
@@ -283,6 +294,7 @@ def register_pcap_tools(
         filepath: str,
         packet_number: int,
         verbose: bool = True,
+        hex_dump: bool = False,
     ) -> dict:
         """
         Decode a single packet in full detail.
@@ -291,6 +303,7 @@ def register_pcap_tools(
             filepath: Path to PCAP file
             packet_number: Packet number to decode (1-based)
             verbose: If True, return verbose text decode; if False, return JSON layers
+            hex_dump: If True, include hex and ASCII dump of raw packet bytes (-x flag)
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
@@ -300,15 +313,15 @@ def register_pcap_tools(
             frame_filter = f"frame.number == {packet_number}"
 
             if verbose:
-                result = await tshark._run(
-                    ["-r", str(validated_path), "-Y", frame_filter, "-V"],
-                    timeout=30.0,
-                )
+                args = ["-r", str(validated_path), "-Y", frame_filter, "-V"]
+                if hex_dump:
+                    args.append("-x")
+                result = await tshark._run(args, timeout=30.0)
             else:
-                result = await tshark._run(
-                    ["-r", str(validated_path), "-Y", frame_filter, "-T", "json"],
-                    timeout=30.0,
-                )
+                args = ["-r", str(validated_path), "-Y", frame_filter, "-T", "json"]
+                if hex_dump:
+                    args.append("-x")
+                result = await tshark._run(args, timeout=30.0)
 
             if result.returncode != 0:
                 raise RuntimeError(f"tshark decode failed: {result.stderr}")
@@ -350,5 +363,89 @@ def register_pcap_tools(
                 "raw_output": raw_output,
             }
             return fmt.truncate_output(fmt.format_success(data, title="Packet Decode"))
+        except Exception as e:
+            return fmt.format_error(e, "NETMCP_004")
+
+    # ── convert_pcap_format ─────────────────────────────────────────────
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Convert Pcap Format Editcap",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def convert_pcap_format(
+        file_path: str,
+        output_format: str = "pcapng",
+        output_path: str = "",
+    ) -> dict:
+        """
+        Convert PCAP file to a different format using editcap -F.
+
+        Supports pcap, pcapng, snoop, btsnoop, and pcap-nsec formats.
+
+        Args:
+            file_path: Path to input PCAP file
+            output_format: Target format (pcap, pcapng, snoop, btsnoop, pcap-nsec)
+            output_path: Output file path (auto-generated if empty)
+        """
+        try:
+            if not sec.check_rate_limit("convert_pcap_format"):
+                raise ValueError("Rate limit exceeded for convert_pcap_format")
+
+            validated_path = sec.sanitize_filepath(file_path)
+
+            if output_format not in _EDITCAP_FORMATS:
+                raise ValueError(
+                    f"Invalid output_format: {output_format!r}. "
+                    f"Allowed: {', '.join(sorted(_EDITCAP_FORMATS))}"
+                )
+
+            editcap_bin = shutil.which("editcap")
+            if not editcap_bin:
+                raise FileNotFoundError(
+                    "editcap not found. Install Wireshark to get editcap."
+                )
+
+            if output_path:
+                out = Path(output_path)
+                if ".." in out.parts:
+                    raise ValueError(f"Path traversal not allowed: {output_path!r}")
+                out = out.resolve(strict=False)
+            else:
+                ext = _FORMAT_EXTENSIONS.get(output_format, ".pcap")
+                fd, tmp = tempfile.mkstemp(suffix=ext)
+                os.close(fd)
+                out = Path(tmp)
+
+            cmd = [editcap_bin, "-F", output_format, str(validated_path), str(out)]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120.0)
+
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"editcap failed (rc={proc.returncode}): {stderr.decode().strip()}"
+                )
+
+            sec.audit_log("convert_pcap_format", {
+                "input": str(validated_path),
+                "output": str(out),
+                "format": output_format,
+            })
+
+            result = {
+                "input_file": str(validated_path),
+                "output_file": str(out),
+                "output_format": output_format,
+            }
+            return fmt.format_success(result, title="Format Conversion (editcap)")
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")

@@ -7,6 +7,17 @@ from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
 
+BPF_PRESETS = {
+    "http": "tcp port 80 or tcp port 443",
+    "dns": "port 53",
+    "ssh": "tcp port 22",
+    "smtp": "tcp port 25 or tcp port 465 or tcp port 587",
+    "ftp": "tcp port 20 or tcp port 21",
+    "dhcp": "port 67 or port 68",
+    "icmp": "icmp or icmp6",
+    "voip": "udp portrange 5060-5061 or udp portrange 16384-32767",
+}
+
 
 def register_capture_tools(
     mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator
@@ -61,6 +72,7 @@ def register_capture_tools(
             if not sec.check_rate_limit("live_capture", max_ops=30, window_seconds=3600):
                 raise RuntimeError("Rate limit exceeded: max 30 live captures per hour")
             sec.audit_log("capture_live", {"interface": interface, "duration": duration})
+            bpf_filter = BPF_PRESETS.get(bpf_filter, bpf_filter)
             sec.validate_capture_filter(bpf_filter)
 
             pcap_path = await tshark.capture_live(
@@ -202,6 +214,7 @@ def register_capture_tools(
             if not sec.check_rate_limit("live_capture", max_ops=30, window_seconds=3600):
                 raise RuntimeError("Rate limit exceeded: max 30 live captures per hour")
             sec.audit_log("save_capture", {"interface": interface, "output_file": output_file})
+            bpf_filter = BPF_PRESETS.get(bpf_filter, bpf_filter)
             sec.validate_capture_filter(bpf_filter)
 
             pcap_path = await tshark.capture_live(

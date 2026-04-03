@@ -1,6 +1,7 @@
 """Advanced tshark analysis tools (object extraction, I/O stats, conversations)."""
 
 import asyncio
+import html as html_lib
 import os
 import shutil
 import tempfile
@@ -303,5 +304,198 @@ def register_advanced_tools(
             return fmt.truncate_output(
                 fmt.format_success(output, title="Conversation Statistics")
             )
+        except Exception as e:
+            return fmt.format_error(e, "NETMCP_004")
+
+    # ── generate_report ──────────────────────────────────────────────────
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Generate Analysis Report",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def generate_report(
+        file_path: str,
+        report_format: str = "markdown",
+        sections: str = "summary,protocols,conversations,http,dns,security",
+    ) -> dict:
+        """Generate a comprehensive analysis report in markdown or HTML.
+
+        Args:
+            file_path: Path to PCAP/PCAPNG file
+            report_format: Output format — 'markdown' or 'html'
+            sections: Comma-separated list of sections to include
+        """
+        try:
+            if report_format not in ("markdown", "html"):
+                raise ValueError(
+                    f"Invalid format: {report_format!r}. Allowed: 'markdown', 'html'"
+                )
+
+            validated_path = sec.sanitize_filepath(file_path)
+            section_list = [s.strip() for s in sections.split(",") if s.strip()]
+
+            section_stats_map: dict[str, str] = {
+                "summary": "io,stat,0",
+                "protocols": "io,phs",
+                "conversations": "conv,ip",
+                "http": "http,tree",
+                "dns": "dns,tree",
+            }
+
+            section_outputs: dict[str, str] = {}
+
+            for section in section_list:
+                if section == "security":
+                    # Credentials + expert info
+                    expert_result = await tshark._run(
+                        ["-r", str(validated_path), "-z", "expert", "-q"],
+                        timeout=60.0,
+                    )
+                    section_outputs["security"] = expert_result.stdout if expert_result.returncode == 0 else ""
+                elif section in section_stats_map:
+                    stat_arg = section_stats_map[section]
+                    result = await tshark._run(
+                        ["-r", str(validated_path), "-z", stat_arg, "-q"],
+                        timeout=60.0,
+                    )
+                    section_outputs[section] = result.stdout if result.returncode == 0 else ""
+
+            sec.audit_log("generate_report", {
+                "filepath": str(validated_path),
+                "format": report_format,
+                "sections": section_list,
+            })
+
+            if report_format == "markdown":
+                return _build_markdown_report(validated_path, section_list, section_outputs)
+            else:
+                return _build_html_report(validated_path, section_list, section_outputs)
+        except Exception as e:
+            return fmt.format_error(e, "NETMCP_004")
+
+    def _build_markdown_report(filepath, section_list, section_outputs) -> dict:
+        lines = [f"# Отчёт по анализу: {filepath}\n"]
+
+        for section in section_list:
+            raw = section_outputs.get(section, "")
+            title = section.capitalize()
+            lines.append(f"## {title}\n")
+            if raw:
+                lines.append("```")
+                lines.append(raw.strip())
+                lines.append("```\n")
+            else:
+                lines.append("Данные отсутствуют.\n")
+
+        md = "\n".join(lines)
+        return fmt.truncate_output(fmt.format_success(md, title="Analysis Report"))
+
+    def _build_html_report(filepath, section_list, section_outputs) -> dict:
+        css = (
+            "body { font-family: -apple-system, sans-serif; background: #1a1a2e;"
+            " color: #e0e0e0; padding: 20px; max-width: 1200px; margin: 0 auto; }"
+            " .card { background: #16213e; border-radius: 8px; padding: 16px; margin: 12px 0; }"
+            " table { width: 100%; border-collapse: collapse; }"
+            " th { background: #0f3460; padding: 8px; text-align: left; }"
+            " td { padding: 8px; border-bottom: 1px solid #2a2a4a; }"
+            " tr:nth-child(even) { background: #1a1a3e; }"
+            " h1, h2 { color: #e94560; }"
+            " .stat { font-size: 24px; font-weight: bold; color: #0fff50; }"
+            " pre { background: #0d1b2a; padding: 12px; border-radius: 4px;"
+            " overflow-x: auto; font-size: 13px; }"
+        )
+
+        parts = [
+            "<!DOCTYPE html>",
+            "<html>",
+            "<head><meta charset='utf-8'>",
+            f"<title>NetMCP Report — {html_lib.escape(str(filepath))}</title>",
+            f"<style>{css}</style>",
+            "</head>",
+            "<body>",
+            "<h1>Отчёт по анализу</h1>",
+            f"<div class='card'><span class='stat'>{html_lib.escape(str(filepath))}</span></div>",
+        ]
+
+        for section in section_list:
+            raw = section_outputs.get(section, "")
+            title = html_lib.escape(section.capitalize())
+            parts.append(f"<h2>{title}</h2>")
+            parts.append("<div class='card'>")
+            if raw:
+                parts.append(f"<pre>{html_lib.escape(raw.strip())}</pre>")
+            else:
+                parts.append("<p>Данные отсутствуют.</p>")
+            parts.append("</div>")
+
+        parts.extend(["</body>", "</html>"])
+        html_output = "\n".join(parts)
+        return fmt.truncate_output(fmt.format_success(html_output, title="Analysis Report (HTML)"))
+
+    # ── get_capture_info ─────────────────────────────────────────────────
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get Capture Info",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def get_capture_info(file_path: str) -> dict:
+        """Get detailed capture file information using capinfos.
+
+        Args:
+            file_path: Path to PCAP/PCAPNG file
+        """
+        try:
+            validated_path = sec.sanitize_filepath(file_path)
+
+            capinfos_bin = shutil.which("capinfos")
+            if not capinfos_bin:
+                raise FileNotFoundError(
+                    "capinfos not found on PATH. Install Wireshark/tshark to get capinfos."
+                )
+
+            proc = await asyncio.create_subprocess_exec(
+                capinfos_bin, "-M", str(validated_path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                proc.communicate(), timeout=30.0
+            )
+
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"capinfos failed (rc={proc.returncode}): {stderr_bytes.decode().strip()}"
+                )
+
+            raw_output = stdout_bytes.decode()
+            info: dict[str, str] = {}
+            for line in raw_output.strip().splitlines():
+                if "\t" in line:
+                    key, _, val = line.partition("\t")
+                    info[key.strip()] = val.strip()
+
+            # Build formatted markdown
+            lines = ["## Информация о файле захвата\n"]  # noqa: RUF001
+            lines.append("| Параметр | Значение |")
+            lines.append("|----------|----------|")
+            for key, val in info.items():
+                lines.append(f"| {key} | {val} |")
+
+            sec.audit_log("get_capture_info", {
+                "filepath": str(validated_path),
+            })
+
+            md = "\n".join(lines)
+            return fmt.truncate_output(fmt.format_success(md, title="Capture Info"))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
