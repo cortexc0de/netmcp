@@ -8,7 +8,7 @@ from ipaddress import AddressValueError, NetmaskValueError, ip_address, ip_netwo
 from pathlib import Path
 
 # Patterns for input validation
-_SHELL_META = re.compile(r"[;|&$`(){}!]")
+_SHELL_META = re.compile(r"[;|&$`{}!]")
 _INTERFACE_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9:_\-\.]{0,255}$")
 _HOSTNAME_RE = re.compile(
     r"^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$"

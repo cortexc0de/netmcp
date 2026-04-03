@@ -84,7 +84,7 @@ def register_nmap_tools(
                 {"target": target, "result": result}, title="Service Detection"
             )
         except Exception as e:
-            return fmt.format_error(e)
+            return fmt.format_error(e, "NETMCP_003")
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -111,7 +111,7 @@ def register_nmap_tools(
             result = await nmap.os_detect(target)
             return fmt.format_success({"target": target, "result": result}, title="OS Detection")
         except Exception as e:
-            return fmt.format_error(e)
+            return fmt.format_error(e, "NETMCP_003")
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -144,7 +144,7 @@ def register_nmap_tools(
                 {"target": target, "result": result}, title="Vulnerability Scan"
             )
         except Exception as e:
-            return fmt.format_error(e)
+            return fmt.format_error(e, "NETMCP_003")
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -171,7 +171,7 @@ def register_nmap_tools(
             result = await nmap.quick_scan(target)
             return fmt.format_success({"target": target, "result": result}, title="Quick Scan")
         except Exception as e:
-            return fmt.format_error(e)
+            return fmt.format_error(e, "NETMCP_003")
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -200,4 +200,4 @@ def register_nmap_tools(
                 {"target": target, "result": result}, title="Comprehensive Scan"
             )
         except Exception as e:
-            return fmt.format_error(e)
+            return fmt.format_error(e, "NETMCP_003")

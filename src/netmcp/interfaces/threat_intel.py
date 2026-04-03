@@ -56,6 +56,7 @@ class ThreatIntelInterface:
 
         # Simple in-memory cache
         self._cache: dict[str, CacheEntry] = {}
+        self._urlhaus_ips: Optional[CacheEntry] = None
 
     def __repr__(self) -> str:
         return f"ThreatIntelInterface(providers={self.providers})"

@@ -152,7 +152,7 @@ class TestReadPcap:
                 assert "100" in call_args
 
     @pytest.mark.asyncio
-    async def tshark_error_raises(self, mock_pcap):
+    async def test_tshark_error_raises(self, mock_pcap):
         with patch("shutil.which", return_value="/usr/bin/tshark"):
             with patch("subprocess.run") as mock_run:
                 mock_run.side_effect = subprocess.CalledProcessError(

@@ -110,7 +110,7 @@ class TsharkInterface:
         """Run tshark with given arguments asynchronously."""
         cmd = [self.tshark_path, *args]
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             result = await asyncio.wait_for(
                 loop.run_in_executor(
@@ -383,7 +383,7 @@ class TsharkInterface:
         capinfos = shutil.which("capinfos")
         if capinfos:
             cmd = [capinfos, "-T", filepath]
-            asyncio.get_event_loop()
+            asyncio.get_running_loop()
             result = await self._run_cmd(cmd, timeout=10.0)
             if result.returncode == 0:
                 return self._parse_capinfos(result.stdout)
@@ -399,7 +399,7 @@ class TsharkInterface:
 
     async def _run_cmd(self, cmd: list[str], timeout: float = 30.0) -> TsharkResult:
         """Run arbitrary command (for capinfos etc)."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         try:
             result = await asyncio.wait_for(
                 loop.run_in_executor(

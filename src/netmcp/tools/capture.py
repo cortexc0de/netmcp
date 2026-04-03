@@ -67,16 +67,25 @@ def register_capture_tools(
                 timeout=float(duration),
             )
 
-            packets = await tshark.read_pcap(str(pcap_path))
-            summary = {
-                "interface": interface,
-                "duration": duration,
-                "filter": bpf_filter,
-                "packets_captured": len(packets),
-                "pcap_file": str(pcap_path),
-                "packets": packets[:100],  # Limit output
-            }
-            return fmt.format_success(summary, title="Live Capture")
+            try:
+                packets = await tshark.read_pcap(str(pcap_path))
+                summary = {
+                    "interface": interface,
+                    "duration": duration,
+                    "filter": bpf_filter,
+                    "packets_captured": len(packets),
+                    "pcap_file": str(pcap_path),
+                    "packets": packets[:100],  # Limit output
+                }
+                return fmt.format_success(summary, title="Live Capture")
+            finally:
+                # Clean up temporary capture file
+                import os
+
+                try:
+                    os.unlink(str(pcap_path))
+                except OSError:
+                    pass  # File may have been moved or already deleted
         except Exception as e:
             return fmt.format_error(e, "NETMCP_003")
 
@@ -112,37 +121,45 @@ def register_capture_tools(
                 timeout=3.0,
             )
 
-            packets = await tshark.read_pcap(str(pcap_path))
+            try:
+                packets = await tshark.read_pcap(str(pcap_path))
 
-            # Quick summary
-            protocols = set()
-            ips = set()
-            for pkt in packets:
-                layers = pkt.get("_source", {}).get("layers", {})
-                if "frame.protocols" in layers:
-                    protos = (
-                        layers["frame.protocols"][0]
-                        if isinstance(layers["frame.protocols"], list)
-                        else layers["frame.protocols"]
-                    )
-                    protocols.update(protos.split(":"))
-                for ip_field in ("ip.src", "ip.dst"):
-                    if ip_field in layers:
-                        val = layers[ip_field]
-                        ips.add(val[0] if isinstance(val, list) else val)
+                # Quick summary
+                protocols = set()
+                ips = set()
+                for pkt in packets:
+                    layers = pkt.get("_source", {}).get("layers", {})
+                    if "frame.protocols" in layers:
+                        protos = (
+                            layers["frame.protocols"][0]
+                            if isinstance(layers["frame.protocols"], list)
+                            else layers["frame.protocols"]
+                        )
+                        protocols.update(protos.split(":"))
+                    for ip_field in ("ip.src", "ip.dst"):
+                        if ip_field in layers:
+                            val = layers[ip_field]
+                            ips.add(val[0] if isinstance(val, list) else val)
 
-            return fmt.format_success(
-                {
-                    "interface": interface,
-                    "duration_seconds": 3,
-                    "packets_captured": len(packets),
-                    "unique_ips": sorted(ips),
-                    "protocols_seen": sorted(protocols),
-                    "pcap_file": str(pcap_path),
-                    "packets": packets[:20],
-                },
-                title="Quick Capture",
-            )
+                return fmt.format_success(
+                    {
+                        "interface": interface,
+                        "duration_seconds": 3,
+                        "packets_captured": len(packets),
+                        "unique_ips": sorted(ips),
+                        "protocols_seen": sorted(protocols),
+                        "pcap_file": str(pcap_path),
+                        "packets": packets[:20],
+                    },
+                    title="Quick Capture",
+                )
+            finally:
+                import os
+
+                try:
+                    os.unlink(str(pcap_path))
+                except OSError:
+                    pass
         except Exception as e:
             return fmt.format_error(e, "NETMCP_003")
 

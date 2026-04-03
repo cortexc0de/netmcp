@@ -60,7 +60,13 @@ class OutputFormatter:
     def format_error(self, error: Exception, code: str = "") -> dict:
         """Return standardized MCP error response."""
         if not code:
-            code = self._ERROR_CODES.get(type(error), "NETMCP_001")
+            # Use isinstance to catch subclasses
+            for exc_type, code_val in self._ERROR_CODES.items():
+                if isinstance(error, exc_type):
+                    code = code_val
+                    break
+            else:
+                code = "NETMCP_001"
 
         msg = f"[{code}] {error}"
         return {

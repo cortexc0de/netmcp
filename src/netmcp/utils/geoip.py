@@ -2,6 +2,7 @@
 
 import asyncio
 import functools
+from typing import Optional
 
 try:
     from geolite2 import geolite2
@@ -10,13 +11,25 @@ try:
 except ImportError:
     _GEOLITE_AVAILABLE = False
 
+# Module-level singleton to avoid reopening database
+_reader: Optional[object] = None
+
+
+def _get_reader():
+    """Get or create the GeoIP reader singleton."""
+    global _reader
+    if _reader is None and _GEOLITE_AVAILABLE:
+        _reader = geolite2.reader()
+    return _reader
+
 
 @functools.lru_cache(maxsize=1024)
 def lookup_ip(ip: str) -> dict:
     """
     Look up GeoIP information for an IP address.
 
-    Results are cached via LRU cache.
+    Results are cached via LRU cache. Uses a singleton reader to avoid
+    file handle leaks.
 
     Returns:
         Dict with country, city, latitude, longitude, timezone.
@@ -25,7 +38,10 @@ def lookup_ip(ip: str) -> dict:
         return {"ip": ip, "error": "GeoLite2 not available"}
 
     try:
-        reader = geolite2.reader()
+        reader = _get_reader()
+        if reader is None:
+            return {"ip": ip, "error": "GeoLite2 reader unavailable"}
+
         result = reader.get(ip)
 
         if not result:
@@ -60,6 +76,6 @@ async def enrich_ips(ip_list: list[str]) -> list[dict]:
     Returns:
         List of GeoIP result dicts
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     tasks = [loop.run_in_executor(None, lookup_ip, ip) for ip in ip_list]
     return await asyncio.gather(*tasks)

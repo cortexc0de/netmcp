@@ -149,10 +149,6 @@ class TestValidateCaptureFilter:
             with pytest.raises(ValueError, match="shell metacharacters"):
                 validator.validate_capture_filter(bad)
 
-    def test_reject_parens(self, validator):
-        with pytest.raises(ValueError, match="shell metacharacters"):
-            validator.validate_capture_filter("tcp and (port 80 or port 443)")
-
     def test_reject_too_long(self, validator):
         with pytest.raises(ValueError, match="too long"):
             validator.validate_capture_filter("a" * 257)
@@ -273,3 +269,7 @@ class TestIsPrivileged:
     @patch("os.getuid", return_value=1000)
     def test_non_root_is_not_privileged(self, mock_uid, validator):
         assert validator.is_privileged() is False
+
+    def test_allow_parens_in_bpf(self, validator):
+        """Parentheses are valid in BPF filters and should be allowed."""
+        assert validator.validate_capture_filter("tcp and (port 80 or port 443)") == "tcp and (port 80 or port 443)"

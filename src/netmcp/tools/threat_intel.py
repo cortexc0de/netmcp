@@ -70,10 +70,10 @@ def register_threat_tools(
             providers: Comma-separated providers (urlhaus, abuseipdb)
         """
         try:
-            sec.sanitize_filepath(filepath)
+            validated_path = sec.sanitize_filepath(filepath)
             provider_list = [p.strip() for p in providers.split(",") if p.strip()]
 
-            result = await threat.scan_pcap(filepath, tshark, provider_list or None)
+            result = await threat.scan_pcap(str(validated_path), tshark, provider_list or None)
             return fmt.format_success(result, title="PCAP Threat Scan")
         except Exception as e:
             return fmt.format_error(e)

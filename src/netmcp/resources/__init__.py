@@ -1,5 +1,8 @@
 """MCP Resources for NetMCP."""
 
+import subprocess
+from pathlib import Path
+
 from mcp.server.fastmcp import FastMCP
 
 from netmcp.core.formatter import OutputFormatter
@@ -18,35 +21,42 @@ def register_resources(
     @mcp.resource("netmcp://interfaces")
     def get_interfaces() -> str:
         """Dynamic list of available network interfaces."""
-        import asyncio
-
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # Can't await directly, use run_until_complete
-                import concurrent.futures
+            result = subprocess.run(
+                [tshark.tshark_path, "-D"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                shell=False,
+            )
+            if result.returncode != 0:
+                return f"Error listing interfaces: {result.stderr}"
 
-                with concurrent.futures.ThreadPoolExecutor() as pool:
-                    interfaces = loop.run_in_executor(
-                        pool, lambda: asyncio.run(tshark.list_interfaces())
-                    )
-                    # For sync context, we need a different approach
-                    return "Use get_network_interfaces tool for interface list"
-            else:
-                interfaces = loop.run_until_complete(tshark.list_interfaces())
-                return fmt.format_json({"count": len(interfaces), "interfaces": interfaces})
+            interfaces = []
+            for line in result.stdout.strip().split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                if ". " in line:
+                    line = line.split(". ", 1)[1]
+                if " (" in line:
+                    line = line.split(" (", 1)[0]
+                interfaces.append(line.strip())
+
+            return fmt.format_json({"count": len(interfaces), "interfaces": interfaces})
+        except FileNotFoundError:
+            return f"Error: tshark not found at {tshark.tshark_path}"
+        except subprocess.TimeoutExpired:
+            return "Error: interface listing timed out"
         except Exception as e:
             return f"Error: {e}"
 
     @mcp.resource("netmcp://captures")
     def get_captures() -> str:
         """List available PCAP files in common directories."""
-        from pathlib import Path
-
         search_dirs = [
             Path.home() / "captures",
             Path.home() / "pcaps",
-            Path("/tmp"),
             Path.cwd(),
         ]
 
@@ -79,12 +89,16 @@ def register_resources(
             "tools": [
                 "get_network_interfaces",
                 "capture_live_packets",
+                "quick_capture",
+                "save_capture_to_file",
                 "analyze_pcap_file",
                 "get_protocol_statistics",
                 "get_capture_file_info",
                 "capture_targeted_traffic",
                 "analyze_http_traffic",
+                "analyze_http_headers",
                 "detect_network_protocols",
+                "geoip_lookup",
                 "follow_tcp_stream",
                 "follow_udp_stream",
                 "list_tcp_streams",

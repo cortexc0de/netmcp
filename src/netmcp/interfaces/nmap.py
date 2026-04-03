@@ -65,7 +65,7 @@ class NmapInterface:
         """Run an nmap scan asynchronously."""
         scanner = self._get_scanner()
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         def _scan() -> dict:
             try:
