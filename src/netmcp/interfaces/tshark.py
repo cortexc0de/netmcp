@@ -129,7 +129,7 @@ class TsharkInterface:
                 stdout=result.stdout or "",
                 stderr=result.stderr or "",
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise TimeoutError(f"TShark command timed out after {timeout}s") from None
         except FileNotFoundError as e:
             raise TsharkNotFoundError(f"TShark binary not found at {self.tshark_path}: {e}") from e
@@ -336,12 +336,12 @@ class TsharkInterface:
         Returns:
             Stream content as string
         """
-        _ALLOWED_PROTOS = {"tcp", "udp"}
-        _ALLOWED_FMTS = {"ascii", "hex", "raw"}
-        if proto not in _ALLOWED_PROTOS:
-            raise ValueError(f"Invalid protocol: {proto!r}. Allowed: {', '.join(sorted(_ALLOWED_PROTOS))}")
-        if fmt not in _ALLOWED_FMTS:
-            raise ValueError(f"Invalid format: {fmt!r}. Allowed: {', '.join(sorted(_ALLOWED_FMTS))}")
+        allowed_protos = {"tcp", "udp"}
+        allowed_fmts = {"ascii", "hex", "raw"}
+        if proto not in allowed_protos:
+            raise ValueError(f"Invalid protocol: {proto!r}. Allowed: {', '.join(sorted(allowed_protos))}")
+        if fmt not in allowed_fmts:
+            raise ValueError(f"Invalid format: {fmt!r}. Allowed: {', '.join(sorted(allowed_fmts))}")
 
         result = await self._run(
             [
@@ -440,7 +440,7 @@ class TsharkInterface:
                 stdout=result.stdout or "",
                 stderr=result.stderr or "",
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise TimeoutError(f"Command timed out: {cmd}") from None
 
     @staticmethod

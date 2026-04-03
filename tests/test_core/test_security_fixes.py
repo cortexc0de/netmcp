@@ -318,7 +318,7 @@ class TestNmapSingleScan:
         nmap_iface.available = True
         nmap_iface._scanner = mock_scanner
 
-        result = await nmap_iface._run_scan("10.0.0.1", "-sT -T4", timeout=10.0)
+        await nmap_iface._run_scan("10.0.0.1", "-sT -T4", timeout=10.0)
 
         mock_scanner.scan.assert_called_once_with(hosts="10.0.0.1", arguments="-sT -T4")
 
@@ -409,7 +409,7 @@ class TestGeoIPThreadSafety:
         assert len(errors) == 0, f"Errors in concurrent _get_reader: {errors}"
         assert len(results) == 10
         # All threads must return the same singleton (or all None if unavailable)
-        unique = set(id(r) for r in results)
+        unique = {id(r) for r in results}
         assert len(unique) == 1, "All threads should get the same reader instance"
 
 

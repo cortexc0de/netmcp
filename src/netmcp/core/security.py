@@ -5,10 +5,11 @@ import os
 import re
 import threading
 import time
-
-logger = logging.getLogger("netmcp.security")
 from ipaddress import AddressValueError, NetmaskValueError, ip_address, ip_network
 from pathlib import Path
+from typing import ClassVar
+
+logger = logging.getLogger("netmcp.security")
 
 # Patterns for input validation
 _SHELL_META = re.compile(r"[;|&$`{}!]")
@@ -241,12 +242,12 @@ class SecurityValidator:
 
     # ── Nmap flags validation ─────────────────────────────────────────
 
-    _ALLOWED_NMAP_FLAGS = {
+    _ALLOWED_NMAP_FLAGS: ClassVar[set[str]] = {
         "-sT", "-sS", "-sU", "-sV", "-sC", "-O", "-F", "-A",
         "-T0", "-T1", "-T2", "-T3", "-T4", "-T5",
         "--version-all", "--osscan-guess", "--open",
     }
-    _DANGEROUS_NMAP_PATTERNS = {
+    _DANGEROUS_NMAP_PATTERNS: ClassVar[set[str]] = {
         "--script-args", "--script-updatedb", "--datadir",
         "--servicedb", "--versiondb", "--send-eth",
         "--send-ip", "--privileged", "--release-memory",

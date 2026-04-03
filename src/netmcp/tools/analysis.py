@@ -158,11 +158,11 @@ def register_analysis_tools(
                 sec.validate_port_range(str(target_port))
                 filter_parts.append(f"port {target_port}")
             if protocol:
-                _ALLOWED_PROTOCOLS = {"tcp", "udp", "icmp", "arp", "ip", "ip6", "http", "https"}
-                if protocol.lower() not in _ALLOWED_PROTOCOLS:
+                allowed_protocols = {"tcp", "udp", "icmp", "arp", "ip", "ip6", "http", "https"}
+                if protocol.lower() not in allowed_protocols:
                     raise ValueError(
                         f"Invalid protocol: {protocol!r}. "
-                        f"Allowed: {', '.join(sorted(_ALLOWED_PROTOCOLS))}"
+                        f"Allowed: {', '.join(sorted(allowed_protocols))}"
                     )
                 if protocol.lower() in ("http", "https"):
                     filter_parts.append(f"tcp port {80 if protocol.lower() == 'http' else 443}")
