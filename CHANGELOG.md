@@ -5,7 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - v0.3.0
+
+### Added
+
+- **Wireshark profile tools**: `list_wireshark_profiles`, `apply_profile_capture`, `get_color_filters`, `capture_with_profile` — full Wireshark profile integration
+- **PCAP diff** — `diff_pcap_files` compares two capture files (packet counts, unique IPs, protocol distributions)
+- **PCAP merge** — `merge_pcap_files` combines multiple captures via mergecap (chronological or append)
+- **PCAP slice** — `slice_pcap` extracts packet ranges or time windows via editcap, with deduplication
+- **Packet decode** — `decode_packet` provides detailed single-packet analysis with full layer dissection
+- **Flow visualization** — `visualize_network_flows` generates ASCII art and Mermaid sequence diagrams of network conversations
+- **TLS traffic decryption** — `decrypt_tls_traffic` decrypts HTTPS via SSLKEYLOGFILE (NSS Key Log Format)
+- **DNS analysis** — `analyze_dns_traffic` extracts queries, response codes, NXDOMAINs, and detects DNS tunneling
+- **Expert information** — `get_expert_info` extracts Wireshark expert warnings, errors, and protocol violation notes
+- **Large PCAP streaming** — `analyze_large_pcap` processes large files in memory-efficient chunks
+- **Dynamic system/info resource** — `netmcp://system/info` auto-lists all registered tools
+- Total tools now **40** (was 25), across **9 categories** and **11 modules**
+- **564 tests** achieving **95%+ code coverage**
+
+### Changed
+
+- Upgraded test suite from 270+ tests (89%) to 564 tests (95%+)
+- Reorganized tool categories: added Network Flows, PCAP Tools, Wireshark Profiles categories
+- Updated documentation: API reference, README, COMPARISON, and CHANGELOG reflect all 40 tools
 
 ## [0.2.0] — 2026-04-03
 

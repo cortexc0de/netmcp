@@ -1,7 +1,7 @@
 # API Reference — NetMCP
 
 ## Overview
-NetMCP exposes **25 MCP tools**, **3 resources**, and **5 prompts** via the Model Context Protocol.
+NetMCP exposes **40 MCP tools**, **3 resources**, and **5 prompts** via the Model Context Protocol.
 
 All tools follow consistent patterns:
 - Input validation via SecurityValidator
@@ -13,7 +13,7 @@ All tools follow consistent patterns:
 
 ## Tools
 
-### Capture (4 tools)
+### 1. Capture & Analysis (5 tools)
 
 #### `get_network_interfaces`
 List all available network interfaces for packet capture.
@@ -71,9 +71,24 @@ Capture traffic and save directly to a PCAP file.
 
 Returns: `{ interface, duration, filter, packets_captured, output_file, file_size_bytes }`
 
+#### `analyze_large_pcap`
+Analyze a large PCAP file in chunks for memory efficiency.
+
+Processes packets in batches, accumulating protocol, source IP, and destination IP statistics.
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+| `chunk_size` | `int` | `10000` | Number of packets per processing chunk |
+| `display_filter` | `string` | `""` | Optional Wireshark display filter |
+
+Returns: `{ total_packets, chunks_processed, top_protocols[], top_source_ips[], top_dest_ips[] }`
+
 ---
 
-### Analysis (8 tools)
+### 2. Protocol Analysis (10 tools)
 
 #### `analyze_pcap_file`
 Analyze a PCAP file with optional display filters.
@@ -152,7 +167,7 @@ Detect protocols from PCAP file or live capture.
 Returns: `{ source, total_protocols, protocols: {}, insights[] }`
 
 #### `analyze_http_headers`
-Analyze HTTP headers — auth tokens, cookies, suspicious headers.
+Analyze HTTP headers — auth tokens, cookies, suspicious headers (e.g., X-Forwarded-For spoofing).
 
 - **Read-only**: Yes
 
@@ -164,7 +179,7 @@ Analyze HTTP headers — auth tokens, cookies, suspicious headers.
 Returns: `{ filepath, auth_tokens_found, cookies_found, suspicious_headers, unique_user_agents, auth_tokens[], cookies[], suspicious[], user_agents[] }`
 
 #### `geoip_lookup`
-Geographic IP lookup using MaxMind GeoLite2.
+Geographic IP lookup using MaxMind GeoLite2. Can check specific IPs or extract all from a PCAP file.
 
 - **Read-only**: Yes
 
@@ -175,50 +190,309 @@ Geographic IP lookup using MaxMind GeoLite2.
 
 Returns: `{ total_ips, countries: {}, results[] }`
 
+#### `analyze_dns_traffic`
+Analyze DNS queries and responses from a PCAP file. Extracts query names, types, response codes, and detects potential DNS tunneling (unusually long subdomain names).
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+| `max_queries` | `int` | `1000` | Maximum DNS rows to process |
+
+Returns: `{ total_dns_packets, unique_queries, top_domains[], nxdomain_count, nxdomains[], suspicious_domains[], potential_tunneling: bool }`
+
+Example:
+```json
+{
+  "total_dns_packets": 342,
+  "unique_queries": 87,
+  "top_domains": [{"domain": "example.com", "count": 45}],
+  "nxdomain_count": 3,
+  "suspicious_domains": [],
+  "potential_tunneling": false
+}
+```
+
+#### `get_expert_info`
+Extract Wireshark expert information from a PCAP file. Returns warnings, errors, notes, and chats from Wireshark's expert system — useful for identifying protocol violations, malformed packets, retransmissions, etc.
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+
+Returns: `{ errors[], warnings[], notes[], chats[], summary: { error_count, warning_count, note_count, chat_count } }`
+
+Example:
+```json
+{
+  "errors": ["Frame 42: TCP segment not captured"],
+  "warnings": ["Frame 100: TCP retransmission"],
+  "summary": { "error_count": 1, "warning_count": 5, "note_count": 12, "chat_count": 3 }
+}
+```
+
 ---
 
-### Streams (3 tools)
+### 3. Network Flows (2 tools)
 
-#### `follow_tcp_stream`
-Reconstruct a TCP conversation.
-
-- **Read-only**: Yes
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
-| `stream_index` | `int` | `0` | TCP stream index (0-based) |
-| `output_format` | `string` | `"ascii"` | Format: ascii, hex, raw |
-
-Returns: `{ filepath, stream_index, content }`
-
-#### `follow_udp_stream`
-Reconstruct a UDP conversation.
+#### `visualize_network_flows`
+Generate visual diagrams of network flows from a PCAP file. Produces ASCII art or Mermaid sequence diagrams showing packet exchanges between endpoints.
 
 - **Read-only**: Yes
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
-| `stream_index` | `int` | `0` | UDP stream index (0-based) |
-| `output_format` | `string` | `"ascii"` | Format: ascii, hex, raw |
+| `flow_type` | `string` | `"tcp"` | Protocol type: `tcp` or `udp` |
+| `max_flows` | `int` | `20` | Max packet arrows to include (1–200) |
+| `output_format` | `string` | `"text"` | Diagram format: `text` (ASCII art) or `mermaid` |
 
-Returns: `{ filepath, stream_index, content }`
+Returns: `{ filepath, flow_type, flow_count, diagram: string, flows[] }`
 
-#### `list_tcp_streams`
-List all TCP conversations in a capture.
+Example (Mermaid output):
+```
+sequenceDiagram
+    participant A as 10.0.0.1:443
+    participant B as 10.0.0.2:52314
+    A->>B: TCP SYN,ACK
+    B->>A: HTTP GET /api/data
+```
+
+Example (ASCII text output):
+```
+┌────────────────┐                    ┌────────────────┐
+│  10.0.0.1:443  │                    │ 10.0.0.2:52314 │
+└───────┬────────┘                    └───────┬────────┘
+        │── TCP SYN ──────────────────────────>│
+        │<───────────────────── TCP SYN,ACK ───│
+```
+
+#### `decrypt_tls_traffic`
+Decrypt TLS/HTTPS traffic using an SSLKEYLOGFILE. Requires a TLS key log file (NSS Key Log Format) captured alongside the traffic.
 
 - **Read-only**: Yes
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file containing TLS traffic |
+| `keylog_file` | `string` | `""` | Path to TLS key log file (NSS format); falls back to `SSLKEYLOGFILE` env var |
+| `output_file` | `string` | `""` | Optional path to write decrypted pcapng |
 
-Returns: `{ filepath, stream_count, streams[{ endpoint_a, endpoint_b, raw_output }] }`
+Returns: `{ filepath, keylog_file, decrypted_packets, http_requests[], http_responses[], output_file? }`
+
+Example:
+```json
+{
+  "decrypted_packets": 24,
+  "http_requests": [{"method": "GET", "host": "api.example.com", "uri": "/v1/users", "frame": "42"}],
+  "http_responses": [{"code": "200", "content_type": "application/json", "frame": "45"}]
+}
+```
 
 ---
 
-### Export (3 tools)
+### 4. Security (3 tools)
+
+#### `extract_credentials`
+Extract credentials from PCAP: HTTP Basic Auth, FTP, Telnet, Kerberos.
+
+- **Read-only**: Yes
+- **Audit logged**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+
+Returns:
+```json
+{
+  "filepath": "capture.pcap",
+  "plaintext_count": 2,
+  "encrypted_count": 1,
+  "plaintext": [
+    { "type": "HTTP Basic Auth", "username": "admin", "password": "***", "frame": "42" },
+    { "type": "FTP", "username": "user", "password": "***", "frame": "87" }
+  ],
+  "encrypted": [
+    { "type": "Kerberos", "hash": "$krb5asrep$23$...", "username": "jdoe", "realm": "CORP.LOCAL", "frame": "156", "cracking_command": "hashcat -m 18200 hash.txt wordlist.txt" }
+  ]
+}
+```
+
+Kerberos hash formats:
+- AS-REQ/TGS-REQ (msg_type 10/30): `$krb5pa$23$<cname>$<realm>$<cipher>` → `hashcat -m 7500`
+- AS-REP (msg_type 11): `$krb5asrep$23$<cname>@<realm>$<cipher>` → `hashcat -m 18200`
+
+#### `check_ip_threat_intel`
+Check an IP address against threat intelligence feeds.
+
+- **Read-only**: Yes
+- **Rate limit**: `threat_intel` — 100/hour
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `ip_address` | `string` | *required* | IP address to check |
+| `providers` | `string` | `"urlhaus,abuseipdb"` | Providers to check |
+
+Returns: `{ ip, providers: {}, is_threat: bool, threat_providers[] }`
+
+#### `scan_capture_for_threats`
+Extract all IPs from a PCAP file and check against threat feeds.
+
+- **Read-only**: Yes
+- **Rate limit**: `threat_scan` — 10/hour
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+| `providers` | `string` | `"urlhaus,abuseipdb"` | Providers to check |
+
+Returns: `{ filepath, total_ips, threats_found, threat_ips[], ip_results: {} }`
+
+---
+
+### 5. PCAP Tools (4 tools)
+
+#### `diff_pcap_files`
+Compare two PCAP files and report differences in packet counts, unique IPs, and protocol distributions.
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath1` | `string` | *required* | Path to first PCAP file |
+| `filepath2` | `string` | *required* | Path to second PCAP file |
+| `display_filter` | `string` | `""` | Optional Wireshark display filter applied to both |
+
+Returns: `{ file1_packets, file2_packets, only_in_file1_ips[], only_in_file2_ips[], protocol_diff: {}, summary: string }`
+
+Example:
+```json
+{
+  "file1_packets": 1200,
+  "file2_packets": 980,
+  "only_in_file1_ips": ["10.0.0.5"],
+  "only_in_file2_ips": ["10.0.0.99"],
+  "protocol_diff": { "dns": { "file1_frames": 42, "file2_frames": 18 } },
+  "summary": "File1: 1200 packets, File2: 980 packets. 1 IPs only in file1, 1 IPs only in file2, 1 protocol differences."
+}
+```
+
+#### `merge_pcap_files`
+Merge multiple PCAP files into one using mergecap.
+
+- **Read-only**: No
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepaths` | `list[string]` | *required* | List of PCAP file paths to merge |
+| `output_file` | `string` | *required* | Output file path (.pcap or .pcapng) |
+| `chronological` | `bool` | `true` | Merge by timestamp (true) or append in order (false) |
+
+Returns: `{ output_file, files_merged, file_size_bytes }`
+
+#### `slice_pcap`
+Slice or filter a PCAP file using editcap. Extract packets by number range, time range, or remove duplicates.
+
+- **Read-only**: No
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to input PCAP file |
+| `output_file` | `string` | *required* | Output file path (.pcap or .pcapng) |
+| `start_packet` | `int` | `0` | First packet number to keep (1-based) |
+| `end_packet` | `int` | `0` | Last packet number to keep |
+| `start_time` | `string` | `""` | Keep packets after this time (editcap `-A` format) |
+| `end_time` | `string` | `""` | Keep packets before this time (editcap `-B` format) |
+| `remove_duplicates` | `bool` | `false` | Remove duplicate packets |
+
+Returns: `{ input_file, output_file, operation: string, file_size_bytes }`
+
+#### `decode_packet`
+Decode a single packet in full detail. Returns verbose text decode or JSON layers for a specific packet number.
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP file |
+| `packet_number` | `int` | *required* | Packet number to decode (1-based) |
+| `verbose` | `bool` | `true` | If true, return verbose text decode; if false, return JSON layers |
+
+Returns: `{ filepath, packet_number, layers[], raw_output: string }`
+
+---
+
+### 6. Network Scanning (6 tools)
+
+All nmap tools: Rate limit `nmap_scan` — 10/hour. Marked as destructive.
+
+#### `nmap_port_scan`
+Scan target for open ports.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `string` | *required* | IP, hostname, or CIDR range |
+| `ports` | `string` | `""` | Port spec (e.g., '80,443', '1-1024') |
+| `scan_type` | `string` | `"connect"` | syn (needs root), connect (TCP), udp |
+
+Returns: `{ target, scan_type, result: {} }`
+
+#### `nmap_service_detection`
+Detect service versions on open ports.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `string` | *required* | IP or hostname |
+| `ports` | `string` | `""` | Port spec (optional) |
+
+Returns: `{ target, result: {} }`
+
+#### `nmap_os_detection`
+OS fingerprinting (requires root/admin).
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `string` | *required* | IP or hostname |
+
+Returns: `{ target, result: {} }`
+
+#### `nmap_vulnerability_scan`
+Run NSE vulnerability scripts against a target.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `string` | *required* | IP or hostname |
+| `ports` | `string` | `""` | Port spec (optional) |
+
+Returns: `{ target, result: {} }`
+
+#### `nmap_quick_scan`
+Quick scan of top 100 ports.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `string` | *required* | IP or hostname |
+
+Returns: `{ target, result: {} }`
+
+#### `nmap_comprehensive_scan`
+Full scan: SYN + service detection + OS + default scripts.
+
+Nmap args: `-sS -sV -O -sC -T4 --version-all`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `string` | *required* | IP or hostname |
+
+Returns: `{ target, result: {} }`
+
+---
+
+### 7. Export (3 tools)
 
 #### `export_packets_json`
 Export packets as structured JSON.
@@ -262,133 +536,110 @@ Returns: `{ input, output, format }`
 
 ---
 
-### Nmap Scanning (6 tools)
+### 8. Wireshark Profiles (4 tools)
 
-All nmap tools: Rate limit `nmap_scan` — 10/hour. Marked as destructive.
-
-#### `nmap_port_scan`
-Scan target for open ports.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `target` | `string` | *required* | IP, hostname, or CIDR range |
-| `ports` | `string` | `""` | Port spec (e.g., '80,443', '1-1024') |
-| `scan_type` | `string` | `"connect"` | syn (needs root), connect (TCP), udp |
-
-Returns: `{ target, scan_type, result: {} }`
-
-#### `nmap_service_detection`
-Detect service versions on open ports.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `target` | `string` | *required* | IP or hostname |
-| `ports` | `string` | `""` | Port spec (optional) |
-
-Returns: `{ target, result: {} }`
-
-#### `nmap_os_detection`
-OS fingerprinting (requires root/admin).
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `target` | `string` | *required* | IP or hostname |
-
-Returns: `{ target, result: {} }`
-
-#### `nmap_vulnerability_scan`
-Run NSE vulnerability scripts.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `target` | `string` | *required* | IP or hostname |
-| `ports` | `string` | `""` | Port spec (optional) |
-
-Returns: `{ target, result: {} }`
-
-#### `nmap_quick_scan`
-Quick scan of top 100 ports.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `target` | `string` | *required* | IP or hostname |
-
-Returns: `{ target, result: {} }`
-
-#### `nmap_comprehensive_scan`
-Full scan: SYN + service detection + OS + default scripts.
-
-Nmap args: `-sS -sV -O -sC -T4 --version-all`
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `target` | `string` | *required* | IP or hostname |
-
-Returns: `{ target, result: {} }`
-
----
-
-### Threat Intelligence (2 tools)
-
-#### `check_ip_threat_intel`
-Check IP against threat feeds.
+#### `list_wireshark_profiles`
+List available Wireshark profiles and their configuration files. Scans standard profile directories on macOS and Linux.
 
 - **Read-only**: Yes
-- **Rate limit**: `threat_intel` — 100/hour
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `ip_address` | `string` | *required* | IP address to check |
-| `providers` | `string` | `"urlhaus,abuseipdb"` | Providers to check |
+| *(none)* | — | — | — |
 
-Returns: `{ ip, providers: {}, is_threat: bool, threat_providers[] }`
+Returns: `{ profiles[{ name, path, has_colorfilters, has_preferences, has_decode_as }], default_profile_path }`
 
-#### `scan_capture_for_threats`
-Extract all IPs from PCAP and check against threat feeds.
+#### `apply_profile_capture`
+Analyze a PCAP file using a specific Wireshark profile's configuration (preferences, decode-as rules, etc.).
 
 - **Read-only**: Yes
-- **Rate limit**: `threat_scan` — 10/hour
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
-| `providers` | `string` | `"urlhaus,abuseipdb"` | Providers to check |
+| `profile_name` | `string` | *required* | Wireshark profile name to apply |
+| `display_filter` | `string` | `""` | Optional Wireshark display filter |
+| `max_packets` | `int` | `10000` | Maximum packets to return |
 
-Returns: `{ filepath, total_ips, threats_found, threat_ips[], ip_results: {} }`
+Returns: `{ filepath, profile, packets_analyzed, packets[] }`
 
----
-
-### Credential Extraction (1 tool)
-
-#### `extract_credentials`
-Extract credentials from PCAP: HTTP Basic Auth, FTP, Telnet, Kerberos.
+#### `get_color_filters`
+Read Wireshark color filter rules from a profile or the default config. Parses the `colorfilters` file into structured data.
 
 - **Read-only**: Yes
-- **Audit logged**: Yes
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+| `profile_name` | `string` | `""` | Profile name (empty uses default config) |
 
-Returns:
+Returns: `{ profile, filter_count, filters[{ name, display_filter, foreground_rgb, background_rgb, enabled }] }`
+
+Example:
 ```json
 {
-  "filepath": "capture.pcap",
-  "plaintext_count": 2,
-  "encrypted_count": 1,
-  "plaintext": [
-    { "type": "HTTP Basic Auth", "username": "admin", "password": "***", "frame": "42" },
-    { "type": "FTP", "username": "user", "password": "***", "frame": "87" }
-  ],
-  "encrypted": [
-    { "type": "Kerberos", "hash": "$krb5asrep$23$...", "username": "jdoe", "realm": "CORP.LOCAL", "frame": "156", "cracking_command": "hashcat -m 18200 hash.txt wordlist.txt" }
+  "profile": "default",
+  "filter_count": 15,
+  "filters": [
+    { "name": "Bad TCP", "display_filter": "tcp.analysis.flags", "foreground_rgb": [0,0,0], "background_rgb": [65535,0,0], "enabled": true }
   ]
 }
 ```
 
-Kerberos hash formats:
-- AS-REQ/TGS-REQ (msg_type 10/30): `$krb5pa$23$<cname>$<realm>$<cipher>` → `hashcat -m 7500`
-- AS-REP (msg_type 11): `$krb5asrep$23$<cname>@<realm>$<cipher>` → `hashcat -m 18200`
+#### `capture_with_profile`
+Live capture using a Wireshark profile's configuration.
+
+- **Read-only**: No
+- **Rate limit**: `profile_capture` — 30/hour
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `interface` | `string` | *required* | Network interface (e.g., eth0, en0) |
+| `profile_name` | `string` | *required* | Wireshark profile name to apply |
+| `duration` | `int` | `10` | Capture duration in seconds |
+| `packet_count` | `int` | `500` | Maximum packets |
+
+Returns: `{ interface, profile, packets_captured, packets[] }`
+
+---
+
+### 9. Stream Analysis (3 tools)
+
+#### `follow_tcp_stream`
+Reconstruct a TCP conversation from a PCAP file.
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+| `stream_index` | `int` | `0` | TCP stream index (0-based) |
+| `output_format` | `string` | `"ascii"` | Format: ascii, hex, raw |
+
+Returns: `{ filepath, stream_index, content }`
+
+#### `follow_udp_stream`
+Reconstruct a UDP conversation from a PCAP file.
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+| `stream_index` | `int` | `0` | UDP stream index (0-based) |
+| `output_format` | `string` | `"ascii"` | Format: ascii, hex, raw |
+
+Returns: `{ filepath, stream_index, content }`
+
+#### `list_tcp_streams`
+List all TCP conversations found in a PCAP file.
+
+- **Read-only**: Yes
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filepath` | `string` | *required* | Path to PCAP/PCAPNG file |
+
+Returns: `{ filepath, stream_count, streams[{ endpoint_a, endpoint_b, raw_output }] }`
 
 ---
 
@@ -411,7 +662,7 @@ Returns:
 ```
 
 ### `netmcp://system/info`
-System capabilities and tool availability.
+System capabilities and tool availability. Dynamically lists all registered tools.
 
 Returns:
 ```json
@@ -498,6 +749,7 @@ Workflow: quick capture → extended capture → protocol stats → list TCP str
 | Operation | Limit | Applied To |
 |-----------|-------|------------|
 | `live_capture` | 30/hour | All capture tools |
+| `profile_capture` | 30/hour | Profile-based capture tools |
 | `nmap_scan` | 10/hour | All nmap tools |
 | `threat_intel` | 100/hour | IP reputation checks |
 | `threat_scan` | 10/hour | PCAP-wide threat scans |

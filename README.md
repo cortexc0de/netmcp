@@ -5,7 +5,7 @@
 **Professional-grade network analysis MCP server — Wireshark/TShark + Nmap + Threat Intelligence**
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/cortexc0de/netmcp/ci.yml?branch=main&label=tests&style=flat-square)](https://github.com/cortexc0de/netmcp/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-89%25-brightgreen?style=flat-square)](https://github.com/cortexc0de/netmcp)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen?style=flat-square)](https://github.com/cortexc0de/netmcp)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/netmcp?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/netmcp/)
@@ -40,7 +40,7 @@ That's it. The server starts on **stdio** transport by default, ready for any MC
 ## ✨ Features
 
 - 📡 **Packet Capture** — Live capture, BPF filtering, targeted traffic, quick capture mode
-- 🔬 **Deep Analysis** — PCAP parsing, protocol statistics, HTTP traffic analysis, GeoIP enrichment
+- 🔬 **Deep Analysis** — PCAP parsing, protocol statistics, HTTP traffic analysis, DNS analysis, expert info, GeoIP enrichment
 - 🔄 **Stream Reconstruction** — Follow TCP/UDP conversations, enumerate streams
 - 📤 **Flexible Export** — JSON, CSV, pcap/pcapng format conversion
 - 🔍 **Nmap Integration** — Port scan, service detection, OS fingerprinting, vulnerability scan
@@ -50,21 +50,33 @@ That's it. The server starts on **stdio** transport by default, ready for any MC
 - 🔒 **5-Layer Security** — Input validation, shell=False, rate limiting, path traversal protection, audit logging
 - 💬 **Guided Workflows** — Security audit, incident response, troubleshooting, traffic analysis, network baseline prompts
 
+### Advanced Features
+
+- 🔀 **PCAP Diff/Merge/Slice** — Compare captures, combine files via mergecap, extract packet ranges via editcap
+- 📊 **Flow Visualization** — ASCII art and Mermaid sequence diagrams of network conversations
+- 🔓 **TLS Decryption** — Decrypt HTTPS traffic using SSLKEYLOGFILE (NSS Key Log Format)
+- 🎨 **Wireshark Profiles** — List profiles, apply profile settings, parse color filters, capture with profile
+- 🧬 **DNS Tunneling Detection** — Analyze DNS traffic and flag suspiciously long subdomain names
+- 📦 **Packet Decode** — Detailed single-packet analysis with full protocol layer dissection
+- 🏥 **Expert Information** — Extract Wireshark's expert warnings, errors, and protocol violation notes
+
 ---
 
 ## 📊 Tool Categories
 
-NetMCP provides **25 tools** across **7 categories**, plus **3 resources** and **5 prompts**:
+NetMCP provides **40 tools** across **9 categories**, plus **3 resources** and **5 prompts**:
 
 | Category | Tools | Description |
 |----------|-------|-------------|
-| 📡 **Capture** | 4 | `get_network_interfaces` · `capture_live_packets` · `quick_capture` · `save_capture_to_file` |
-| 🔬 **Analysis** | 8 | `analyze_pcap_file` · `get_protocol_statistics` · `get_capture_file_info` · `capture_targeted_traffic` · `analyze_http_traffic` · `detect_network_protocols` · `analyze_http_headers` · `geoip_lookup` |
+| 📡 **Capture & Analysis** | 5 | `get_network_interfaces` · `capture_live_packets` · `quick_capture` · `save_capture_to_file` · `analyze_large_pcap` |
+| 🔬 **Protocol Analysis** | 10 | `analyze_pcap_file` · `get_protocol_statistics` · `get_capture_file_info` · `capture_targeted_traffic` · `analyze_http_traffic` · `detect_network_protocols` · `analyze_http_headers` · `geoip_lookup` · `analyze_dns_traffic` · `get_expert_info` |
+| 📊 **Network Flows** | 2 | `visualize_network_flows` (ASCII + Mermaid) · `decrypt_tls_traffic` |
+| 🔧 **PCAP Tools** | 4 | `diff_pcap_files` · `merge_pcap_files` · `slice_pcap` · `decode_packet` |
 | 🔄 **Streams** | 3 | `follow_tcp_stream` · `follow_udp_stream` · `list_tcp_streams` |
 | 📤 **Export** | 3 | `export_packets_json` · `export_packets_csv` · `convert_pcap_format` |
 | 🔍 **Nmap** | 6 | `nmap_port_scan` · `nmap_service_detection` · `nmap_os_detection` · `nmap_vulnerability_scan` · `nmap_quick_scan` · `nmap_comprehensive_scan` |
-| 🛡️ **Threat Intel** | 2 | `check_ip_threat_intel` · `scan_capture_for_threats` |
-| 🔑 **Credentials** | 1 | `extract_credentials` |
+| 🛡️ **Security** | 3 | `extract_credentials` · `check_ip_threat_intel` · `scan_capture_for_threats` |
+| 🎨 **Wireshark Profiles** | 4 | `list_wireshark_profiles` · `apply_profile_capture` · `get_color_filters` · `capture_with_profile` |
 
 > 📖 Full API reference with parameters and examples: [docs/API.md](docs/API.md)
 
@@ -285,7 +297,7 @@ src/netmcp/
 │   ├── tshark.py            # TShark async CLI wrapper
 │   ├── nmap.py              # python-nmap wrapper
 │   └── threat_intel.py      # URLhaus + AbuseIPDB clients
-├── tools/                   # 25 MCP tools across 7 modules
+├── tools/                   # 40 MCP tools across 11 modules
 ├── resources/               # 3 MCP resources
 └── prompts/                 # 5 MCP prompts
 ```
