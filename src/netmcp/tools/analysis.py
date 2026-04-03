@@ -257,3 +257,163 @@ def register_analysis_tools(
             return fmt.format_success(result, title="Protocol Detection")
         except Exception as e:
             return fmt.format_error(e)
+
+    @mcp.tool()
+    async def analyze_http_headers(
+        filepath: str,
+        include_cookies: bool = True,
+    ) -> dict:
+        """
+        Analyze HTTP headers from a PCAP file — tokens, cookies, auth headers.
+
+        Extracts:
+        - Cookies and session tokens
+        - Authorization headers (Bearer, API keys)
+        - Custom security headers
+        - Suspicious headers (X-Forwarded-For spoofing)
+
+        Args:
+            filepath: Path to PCAP/PCAPNG file
+            include_cookies: Whether to include cookie analysis
+        """
+        try:
+            validated_path = sec.sanitize_filepath(filepath)
+
+            # Extract HTTP header fields
+            header_fields = [
+                "http.request.method",
+                "http.host",
+                "http.request.uri",
+                "http.authorization",
+                "http.cookie",
+                "http.set_cookie",
+                "http.user_agent",
+                "http.referer",
+                "http.x_forwarded_for",
+                "http.response.code",
+                "frame.number",
+            ]
+            rows = await tshark.export_fields(
+                str(validated_path), header_fields, display_filter="http"
+            )
+
+            auth_tokens = []
+            cookies = []
+            suspicious = []
+            user_agents = set()
+
+            for row in rows:
+                auth = row.get("http.authorization", "")
+                cookie = row.get("http.cookie", "") if include_cookies else ""
+                xff = row.get("http.x_forwarded_for", "")
+                ua = row.get("http.user_agent", "")
+                frame = row.get("frame.number", "")
+
+                # Auth tokens
+                if auth:
+                    auth_tokens.append(
+                        {
+                            "type": "Bearer"
+                            if auth.startswith("Bearer")
+                            else "Basic"
+                            if auth.startswith("Basic")
+                            else "Other",
+                            "value_preview": auth[:50] + "...",
+                            "frame": frame,
+                        }
+                    )
+
+                # Cookies
+                if cookie:
+                    cookie_parts = cookie.split("; ")
+                    for part in cookie_parts:
+                        if "=" in part:
+                            name, _, val = part.partition("=")
+                            cookies.append(
+                                {
+                                    "name": name.strip(),
+                                    "value_preview": val[:30] + "..." if len(val) > 30 else val,
+                                    "frame": frame,
+                                }
+                            )
+
+                # Suspicious headers
+                if xff:
+                    suspicious.append(
+                        {
+                            "type": "X-Forwarded-For",
+                            "value": xff,
+                            "frame": frame,
+                        }
+                    )
+
+                # User agents
+                if ua:
+                    user_agents.add(ua)
+
+            result = {
+                "filepath": str(validated_path),
+                "auth_tokens_found": len(auth_tokens),
+                "cookies_found": len(cookies),
+                "suspicious_headers": len(suspicious),
+                "unique_user_agents": len(user_agents),
+                "auth_tokens": auth_tokens[:50],
+                "cookies": cookies[:100],
+                "suspicious": suspicious[:20],
+                "user_agents": list(user_agents)[:20],
+            }
+            return fmt.format_success(result, title="HTTP Header Analysis")
+        except Exception as e:
+            return fmt.format_error(e, "NETMCP_004")
+
+    @mcp.tool()
+    async def geoip_lookup(
+        ip_addresses: str,
+        filepath: str = "",
+    ) -> dict:
+        """
+        Look up geographic information for IP addresses.
+
+        Can check specific IPs or extract all from a PCAP file.
+
+        Args:
+            ip_addresses: Comma-separated IP addresses (e.g., '1.1.1.1,8.8.8.8')
+            filepath: PCAP file to extract IPs from (optional, overrides ip_addresses if provided)
+        """
+        try:
+            from netmcp.utils.geoip import enrich_ips
+
+            ips_to_check = []
+
+            if filepath:
+                validated_path = sec.sanitize_filepath(filepath)
+                # Extract IPs from PCAP
+                packets = await tshark.export_fields(str(validated_path), ["ip.src", "ip.dst"])
+                for row in packets:
+                    for val in row.values():
+                        val = val.strip()
+                        if val and val not in ("", "unknown"):
+                            ips_to_check.append(val)
+                ips_to_check = list(set(ips_to_check))[:100]  # Limit to 100
+            elif ip_addresses:
+                ips_to_check = [ip.strip() for ip in ip_addresses.split(",") if ip.strip()]
+
+            if not ips_to_check:
+                return fmt.format_error(ValueError("No IP addresses provided"), "NETMCP_002")
+
+            geo_results = await enrich_ips(ips_to_check)
+
+            # Summary
+            countries = {}
+            for r in geo_results:
+                c = r.get("country", "Unknown")
+                countries[c] = countries.get(c, 0) + 1
+
+            result = {
+                "total_ips": len(geo_results),
+                "countries": dict(sorted(countries.items(), key=lambda x: -x[1])),
+                "results": geo_results[:100],
+            }
+            return fmt.format_success(result, title="GeoIP Lookup")
+        except Exception as e:
+            return fmt.format_error(e)

@@ -80,3 +80,54 @@ Provide an incident response report with:
 - Vulnerability assessment
 - Immediate containment recommendations
 - Long-term remediation steps"""
+
+    @mcp.prompt()
+    def traffic_analysis(filepath: str) -> str:
+        """
+        Perform deep traffic analysis with protocol breakdown and GeoIP mapping.
+
+        Guided workflow:
+        1. Get protocol statistics from the PCAP
+        2. Analyze HTTP traffic for patterns and anomalies
+        3. Extract and analyze HTTP headers (cookies, tokens, auth)
+        4. Look up GeoIP data for all IPs
+        5. Identify unusual patterns or suspicious activity
+        """
+        return f"""Perform a comprehensive traffic analysis of: {filepath}
+
+Step 1: Run get_protocol_statistics for protocol breakdown
+Step 2: Run analyze_http_traffic to understand web activity
+Step 3: Run analyze_http_headers to find cookies, tokens, auth headers
+Step 4: Run geoip_lookup to map all IPs to geographic locations
+Step 5: Run extract_credentials to find any exposed credentials
+
+Provide a traffic analysis report with:
+- Protocol distribution summary
+- Top communicating endpoints with GeoIP data
+- HTTP activity summary (methods, hosts, status codes)
+- Suspicious patterns or indicators
+- Cookie and token inventory"""
+
+    @mcp.prompt()
+    def network_baseline(interface: str = "eth0", duration: int = 30) -> str:
+        """
+        Establish a network baseline to understand normal traffic patterns.
+
+        Guided workflow:
+        1. Quick capture to see immediate activity
+        2. Extended capture for baseline
+        3. Protocol distribution analysis
+        4. Conversation analysis
+        """
+        return f"""Establish a network baseline on interface '{interface}' for {duration} seconds.
+
+Step 1: Run quick_capture to see immediate activity (3 seconds)
+Step 2: Run capture_live_packets with extended duration
+Step 3: Run get_protocol_statistics for protocol breakdown
+Step 4: Run list_tcp_streams to understand active conversations
+
+Provide a baseline report with:
+- Normal traffic volume and protocol mix
+- Expected communication pairs
+- Baseline for future anomaly detection
+- Any deviations from expected patterns"""
