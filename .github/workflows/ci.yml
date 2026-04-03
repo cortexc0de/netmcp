@@ -58,7 +58,7 @@ jobs:
             --cov-fail-under=40
       - name: Upload coverage to artifact
         if: matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage.xml
@@ -85,7 +85,7 @@ jobs:
           test -f dist/*.whl || exit 1
           test -f dist/*.tar.gz || exit 1
       - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
