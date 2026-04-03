@@ -7,7 +7,9 @@ from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
 
 
-def register_analysis_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator) -> None:
+def register_analysis_tools(
+    mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator
+) -> None:
     """Register analysis-related MCP tools."""
 
     @mcp.tool()
@@ -37,7 +39,11 @@ def register_analysis_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFo
                 layers = pkt.get("_source", {}).get("layers", {})
                 for ip_field in ("ip.src", "ip.dst"):
                     if ip_field in layers:
-                        ips.add(layers[ip_field][0] if isinstance(layers[ip_field], list) else layers[ip_field])
+                        ips.add(
+                            layers[ip_field][0]
+                            if isinstance(layers[ip_field], list)
+                            else layers[ip_field]
+                        )
 
             result = {
                 "filepath": str(validated_path),
@@ -160,8 +166,13 @@ def register_analysis_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFo
             validated_path = sec.sanitize_filepath(filepath)
             packets = await tshark.export_fields(
                 str(validated_path),
-                fields=["http.request.method", "http.host", "http.request.uri",
-                        "http.response.code", "http.user_agent"],
+                fields=[
+                    "http.request.method",
+                    "http.host",
+                    "http.request.uri",
+                    "http.response.code",
+                    "http.user_agent",
+                ],
                 display_filter="http",
             )
 
@@ -227,7 +238,9 @@ def register_analysis_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFo
                 stats = await tshark.protocol_stats(str(pcap_path))
                 source = f"live capture on {interface}"
             else:
-                return fmt.format_error(ValueError("Either filepath or interface required"), "NETMCP_002")
+                return fmt.format_error(
+                    ValueError("Either filepath or interface required"), "NETMCP_002"
+                )
 
             insights = []
             proto_names = list(stats.keys())

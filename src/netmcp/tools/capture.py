@@ -7,7 +7,9 @@ from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
 
 
-def register_capture_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator) -> None:
+def register_capture_tools(
+    mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator
+) -> None:
     """Register capture-related MCP tools."""
 
     @mcp.tool()
@@ -16,8 +18,7 @@ def register_capture_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFor
         try:
             interfaces = await tshark.list_interfaces()
             return fmt.format_success(
-                {"count": len(interfaces), "interfaces": interfaces},
-                title="Network Interfaces"
+                {"count": len(interfaces), "interfaces": interfaces}, title="Network Interfaces"
             )
         except Exception as e:
             return fmt.format_error(e, "NETMCP_003")

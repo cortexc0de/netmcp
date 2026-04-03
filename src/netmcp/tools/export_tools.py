@@ -10,13 +10,22 @@ from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
 
 _DEFAULT_EXPORT_FIELDS = [
-    "frame.number", "frame.time", "ip.src", "ip.dst",
-    "tcp.srcport", "tcp.dstport", "udp.srcport", "udp.dstport",
-    "frame.protocols", "frame.len",
+    "frame.number",
+    "frame.time",
+    "ip.src",
+    "ip.dst",
+    "tcp.srcport",
+    "tcp.dstport",
+    "udp.srcport",
+    "udp.dstport",
+    "frame.protocols",
+    "frame.len",
 ]
 
 
-def register_export_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator) -> None:
+def register_export_tools(
+    mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator
+) -> None:
     """Register export-related MCP tools."""
 
     @mcp.tool()
@@ -37,7 +46,11 @@ def register_export_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
             validated_path = sec.sanitize_filepath(filepath)
             packets = await tshark.export_json(str(validated_path), display_filter, max_packets)
             return fmt.format_success(
-                {"filepath": str(validated_path), "packet_count": len(packets), "packets": packets[:500]},
+                {
+                    "filepath": str(validated_path),
+                    "packet_count": len(packets),
+                    "packets": packets[:500],
+                },
                 title="JSON Export",
             )
         except Exception as e:
@@ -59,7 +72,9 @@ def register_export_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
-            field_list = [f.strip() for f in fields.split(",")] if fields else _DEFAULT_EXPORT_FIELDS
+            field_list = (
+                [f.strip() for f in fields.split(",")] if fields else _DEFAULT_EXPORT_FIELDS
+            )
             rows = await tshark.export_fields(str(validated_path), field_list, display_filter)
 
             # Convert to CSV string

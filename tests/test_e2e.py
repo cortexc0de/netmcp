@@ -17,6 +17,7 @@ class TestServerCreation:
     def test_server_with_tshark_mocked(self):
         """Server must work when tshark is found."""
         import netmcp.interfaces.tshark as tshark_mod
+
         original = tshark_mod.find_tshark
         tshark_mod.find_tshark = lambda: "/usr/bin/tshark"
         try:
@@ -32,6 +33,7 @@ class TestResponseFormat:
     def test_formatter_success_format(self):
         """Success responses must have correct MCP structure."""
         from netmcp.core.formatter import OutputFormatter
+
         fmt = OutputFormatter()
 
         result = fmt.format_success({"data": "test"})
@@ -43,6 +45,7 @@ class TestResponseFormat:
     def test_formatter_error_format(self):
         """Error responses must have correct MCP structure."""
         from netmcp.core.formatter import OutputFormatter
+
         fmt = OutputFormatter()
 
         result = fmt.format_error(ValueError("bad input"), "NETMCP_002")
@@ -58,6 +61,7 @@ class TestSecurityValidator:
     def test_invalid_input_rejected(self):
         """SecurityValidator must reject dangerous inputs."""
         from netmcp.core.security import SecurityValidator
+
         sec = SecurityValidator()
 
         with pytest.raises(ValueError, match=r"dangerous characters|shell metacharacters"):
@@ -69,6 +73,7 @@ class TestSecurityValidator:
     def test_valid_input_accepted(self):
         """Valid inputs must pass through."""
         from netmcp.core.security import SecurityValidator
+
         sec = SecurityValidator()
 
         assert sec.validate_target("192.168.1.1") == "192.168.1.1"
@@ -92,6 +97,7 @@ class TestWithoutDependencies:
     def test_server_without_abuseipdb_key(self):
         """Server works without AbuseIPDB key (only URLhaus)."""
         import netmcp.interfaces.tshark as tshark_mod
+
         original = tshark_mod.find_tshark
         tshark_mod.find_tshark = lambda: "/usr/bin/tshark"
         try:

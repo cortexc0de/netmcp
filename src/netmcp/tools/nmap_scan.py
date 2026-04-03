@@ -7,7 +7,9 @@ from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.nmap import NmapInterface
 
 
-def register_nmap_tools(mcp: FastMCP, nmap: NmapInterface, fmt: OutputFormatter, sec: SecurityValidator) -> None:
+def register_nmap_tools(
+    mcp: FastMCP, nmap: NmapInterface, fmt: OutputFormatter, sec: SecurityValidator
+) -> None:
     """Register nmap-related MCP tools."""
 
     @mcp.tool()
@@ -35,7 +37,9 @@ def register_nmap_tools(mcp: FastMCP, nmap: NmapInterface, fmt: OutputFormatter,
                 raise ValueError("scan_type must be 'syn', 'connect', or 'udp'")
 
             result = await nmap.port_scan(target, ports, scan_type)
-            return fmt.format_success({"target": target, "scan_type": scan_type, "result": result}, title="Port Scan")
+            return fmt.format_success(
+                {"target": target, "scan_type": scan_type, "result": result}, title="Port Scan"
+            )
         except Exception as e:
             return fmt.format_error(e, "NETMCP_002")
 
@@ -57,7 +61,9 @@ def register_nmap_tools(mcp: FastMCP, nmap: NmapInterface, fmt: OutputFormatter,
                 sec.validate_port_range(ports)
 
             result = await nmap.service_detect(target, ports)
-            return fmt.format_success({"target": target, "result": result}, title="Service Detection")
+            return fmt.format_success(
+                {"target": target, "result": result}, title="Service Detection"
+            )
         except Exception as e:
             return fmt.format_error(e)
 
@@ -97,7 +103,9 @@ def register_nmap_tools(mcp: FastMCP, nmap: NmapInterface, fmt: OutputFormatter,
                 sec.validate_port_range(ports)
 
             result = await nmap.vuln_scan(target, ports)
-            return fmt.format_success({"target": target, "result": result}, title="Vulnerability Scan")
+            return fmt.format_success(
+                {"target": target, "result": result}, title="Vulnerability Scan"
+            )
         except Exception as e:
             return fmt.format_error(e)
 
@@ -133,6 +141,8 @@ def register_nmap_tools(mcp: FastMCP, nmap: NmapInterface, fmt: OutputFormatter,
 
             sec.validate_target(target)
             result = await nmap.comprehensive_scan(target)
-            return fmt.format_success({"target": target, "result": result}, title="Comprehensive Scan")
+            return fmt.format_success(
+                {"target": target, "result": result}, title="Comprehensive Scan"
+            )
         except Exception as e:
             return fmt.format_error(e)

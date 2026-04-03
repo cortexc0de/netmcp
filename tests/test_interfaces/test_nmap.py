@@ -34,8 +34,10 @@ class TestPortScan:
             }
         }
 
-        with patch("shutil.which", return_value="/usr/bin/nmap"), \
-             patch("nmap.PortScanner", return_value=mock_scanner):
+        with (
+            patch("shutil.which", return_value="/usr/bin/nmap"),
+            patch("nmap.PortScanner", return_value=mock_scanner),
+        ):
             iface = NmapInterface()
             result = await iface.port_scan("127.0.0.1", ports="22,80", scan_type="connect")
             assert "scan" in result
@@ -47,8 +49,10 @@ class TestPortScan:
         """Nmap should handle errors gracefully."""
         mock_scanner = MagicMock()
         mock_scanner.scan.side_effect = RuntimeError("nmap failed")
-        with patch("shutil.which", return_value="/usr/bin/nmap"), \
-             patch("nmap.PortScanner", return_value=mock_scanner):
+        with (
+            patch("shutil.which", return_value="/usr/bin/nmap"),
+            patch("nmap.PortScanner", return_value=mock_scanner),
+        ):
             iface = NmapInterface()
             with pytest.raises(RuntimeError):
                 await iface.port_scan("10.0.0.1", ports="80")
@@ -73,8 +77,10 @@ class TestServiceDetection:
             }
         }
 
-        with patch("shutil.which", return_value="/usr/bin/nmap"), \
-             patch("nmap.PortScanner", return_value=mock_scanner):
+        with (
+            patch("shutil.which", return_value="/usr/bin/nmap"),
+            patch("nmap.PortScanner", return_value=mock_scanner),
+        ):
             iface = NmapInterface()
             result = await iface.service_detect("10.0.0.1")
             svc = result["scan"]["10.0.0.1"]["tcp"][80]
@@ -87,17 +93,13 @@ class TestOSDetect:
     async def test_os_detection(self):
         mock_scanner = MagicMock()
         mock_scanner.scan.return_value = {
-            "scan": {
-                "10.0.0.1": {
-                    "osmatch": [
-                        {"name": "Linux 5.4", "accuracy": "95"}
-                    ]
-                }
-            }
+            "scan": {"10.0.0.1": {"osmatch": [{"name": "Linux 5.4", "accuracy": "95"}]}}
         }
 
-        with patch("shutil.which", return_value="/usr/bin/nmap"), \
-             patch("nmap.PortScanner", return_value=mock_scanner):
+        with (
+            patch("shutil.which", return_value="/usr/bin/nmap"),
+            patch("nmap.PortScanner", return_value=mock_scanner),
+        ):
             iface = NmapInterface()
             result = await iface.os_detect("10.0.0.1")
             assert "osmatch" in result["scan"]["10.0.0.1"]
@@ -112,19 +114,16 @@ class TestVulnScan:
             "scan": {
                 "10.0.0.1": {
                     "tcp": {
-                        443: {
-                            "state": "open",
-                            "script": {
-                                "ssl-enum-ciphers": "TLSv1.2: secure"
-                            }
-                        }
+                        443: {"state": "open", "script": {"ssl-enum-ciphers": "TLSv1.2: secure"}}
                     }
                 }
             }
         }
 
-        with patch("shutil.which", return_value="/usr/bin/nmap"), \
-             patch("nmap.PortScanner", return_value=mock_scanner):
+        with (
+            patch("shutil.which", return_value="/usr/bin/nmap"),
+            patch("nmap.PortScanner", return_value=mock_scanner),
+        ):
             iface = NmapInterface()
             result = await iface.vuln_scan("10.0.0.1", ports="443")
             assert "script" in result["scan"]["10.0.0.1"]["tcp"][443]
@@ -144,8 +143,10 @@ class TestQuickScan:
             }
         }
 
-        with patch("shutil.which", return_value="/usr/bin/nmap"), \
-             patch("nmap.PortScanner", return_value=mock_scanner):
+        with (
+            patch("shutil.which", return_value="/usr/bin/nmap"),
+            patch("nmap.PortScanner", return_value=mock_scanner),
+        ):
             iface = NmapInterface()
             result = await iface.quick_scan("10.0.0.1")
             assert result["scan"]["10.0.0.1"]["tcp"][80]["state"] == "open"

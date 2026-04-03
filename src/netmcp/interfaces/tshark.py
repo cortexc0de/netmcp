@@ -17,6 +17,7 @@ class TsharkNotFoundError(Exception):
 @dataclass
 class TsharkResult:
     """Result from a tshark operation."""
+
     returncode: int
     stdout: str
     stderr: str
@@ -69,6 +70,7 @@ def find_tshark() -> str:
 
     # Try fallback paths
     import platform
+
     system = platform.system().lower()
     fallbacks = _FALLBACK_PATHS.get(system, [])
 
@@ -139,7 +141,9 @@ class TsharkInterface:
         """List available network interfaces."""
         result = await self._run(["-D"], timeout=10.0)
         if result.returncode != 0:
-            raise subprocess.CalledProcessError(result.returncode, "tshark -D", stderr=result.stderr)
+            raise subprocess.CalledProcessError(
+                result.returncode, "tshark -D", stderr=result.stderr
+            )
 
         interfaces = []
         for line in result.stdout.strip().split("\n"):
@@ -316,9 +320,11 @@ class TsharkInterface:
         """
         result = await self._run(
             [
-                "-r", filepath,
+                "-r",
+                filepath,
                 "-q",
-                "-z", f"follow,{proto},{fmt},{stream_idx}",
+                "-z",
+                f"follow,{proto},{fmt},{stream_idx}",
             ],
             timeout=30.0,
         )
@@ -360,11 +366,13 @@ class TsharkInterface:
                     left = parts[0].strip()
                     right_and_stats = parts[1].strip()
                     tokens = right_and_stats.split()
-                    streams.append({
-                        "endpoint_a": left,
-                        "endpoint_b": tokens[0] if tokens else "",
-                        "raw_output": line,
-                    })
+                    streams.append(
+                        {
+                            "endpoint_a": left,
+                            "endpoint_b": tokens[0] if tokens else "",
+                            "raw_output": line,
+                        }
+                    )
         return streams
 
     # ── File info (capinfos) ────────────────────────────────────────────
@@ -389,16 +397,16 @@ class TsharkInterface:
             "protocols": ", ".join(stats.keys()),
         }
 
-    async def _run_cmd(
-        self, cmd: list[str], timeout: float = 30.0
-    ) -> TsharkResult:
+    async def _run_cmd(self, cmd: list[str], timeout: float = 30.0) -> TsharkResult:
         """Run arbitrary command (for capinfos etc)."""
         loop = asyncio.get_event_loop()
         try:
             result = await asyncio.wait_for(
                 loop.run_in_executor(
                     None,
-                    lambda: subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, shell=False),
+                    lambda: subprocess.run(
+                        cmd, capture_output=True, text=True, timeout=timeout, shell=False
+                    ),
                 ),
                 timeout=timeout + 5,
             )

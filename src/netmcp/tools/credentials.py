@@ -9,7 +9,9 @@ from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
 
 
-def register_credential_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator) -> None:
+def register_credential_tools(
+    mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator
+) -> None:
     """Register credential extraction MCP tools."""
 
     @mcp.tool()
@@ -31,13 +33,23 @@ def register_credential_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: Output
             pcap = str(validated_path)
 
             # Extract plaintext creds
-            fields = ["http.authbasic", "ftp.request.command", "ftp.request.arg", "telnet.data", "frame.number"]
+            fields = [
+                "http.authbasic",
+                "ftp.request.command",
+                "ftp.request.arg",
+                "telnet.data",
+                "frame.number",
+            ]
             plaintext_rows = await tshark.export_fields(pcap, fields)
 
             # Extract Kerberos creds
             krb_fields = [
-                "kerberos.CNameString", "kerberos.realm", "kerberos.cipher",
-                "kerberos.type", "kerberos.msg_type", "frame.number",
+                "kerberos.CNameString",
+                "kerberos.realm",
+                "kerberos.cipher",
+                "kerberos.type",
+                "kerberos.msg_type",
+                "frame.number",
             ]
             krb_rows = await tshark.export_fields(pcap, krb_fields)
 
@@ -51,12 +63,14 @@ def register_credential_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: Output
                         decoded = base64.b64decode(auth).decode("utf-8", errors="replace")
                         if ":" in decoded:
                             username, password = decoded.split(":", 1)
-                            credentials["plaintext"].append({
-                                "type": "HTTP Basic Auth",
-                                "username": username,
-                                "password": password,
-                                "frame": row.get("frame.number", ""),
-                            })
+                            credentials["plaintext"].append(
+                                {
+                                    "type": "HTTP Basic Auth",
+                                    "username": username,
+                                    "password": password,
+                                    "frame": row.get("frame.number", ""),
+                                }
+                            )
                     except Exception:
                         pass
 
@@ -69,16 +83,22 @@ def register_credential_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: Output
 
                 if cmd == "USER" and arg:
                     ftp_user = arg
-                    credentials["plaintext"].append({
-                        "type": "FTP",
-                        "username": arg,
-                        "password": "",
-                        "frame": frame,
-                    })
+                    credentials["plaintext"].append(
+                        {
+                            "type": "FTP",
+                            "username": arg,
+                            "password": "",
+                            "frame": frame,
+                        }
+                    )
                 elif cmd == "PASS" and arg and ftp_user:
                     # Update last FTP entry
                     for c in reversed(credentials["plaintext"]):
-                        if c["type"] == "FTP" and not c["password"] and c.get("username") == ftp_user:
+                        if (
+                            c["type"] == "FTP"
+                            and not c["password"]
+                            and c.get("username") == ftp_user
+                        ):
                             c["password"] = arg
                             break
                     ftp_user = None
@@ -92,11 +112,13 @@ def register_credential_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: Output
 
                 telnet_lower = telnet.lower()
                 if "login:" in telnet_lower or "password:" in telnet_lower:
-                    credentials["plaintext"].append({
-                        "type": "Telnet Prompt",
-                        "data": telnet,
-                        "frame": frame,
-                    })
+                    credentials["plaintext"].append(
+                        {
+                            "type": "Telnet Prompt",
+                            "data": telnet,
+                            "frame": frame,
+                        }
+                    )
                 elif telnet and " " not in telnet and ":" not in telnet:
                     # Likely username/password
                     last_prompt = None
@@ -106,12 +128,14 @@ def register_credential_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: Output
                             break
                     if last_prompt:
                         if "login:" in last_prompt.get("data", "").lower():
-                            credentials["plaintext"].append({
-                                "type": "Telnet",
-                                "username": telnet,
-                                "password": "",
-                                "frame": frame,
-                            })
+                            credentials["plaintext"].append(
+                                {
+                                    "type": "Telnet",
+                                    "username": telnet,
+                                    "password": "",
+                                    "frame": frame,
+                                }
+                            )
                         elif "password:" in last_prompt.get("data", "").lower():
                             for c in reversed(credentials["plaintext"]):
                                 if c["type"] == "Telnet" and not c["password"]:
@@ -136,14 +160,16 @@ def register_credential_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: Output
                         cracking = "hashcat -m 18200"
 
                     if hash_format:
-                        credentials["encrypted"].append({
-                            "type": "Kerberos",
-                            "hash": hash_format,
-                            "username": cname,
-                            "realm": realm,
-                            "frame": frame,
-                            "cracking_command": cracking,
-                        })
+                        credentials["encrypted"].append(
+                            {
+                                "type": "Kerberos",
+                                "hash": hash_format,
+                                "username": cname,
+                                "realm": realm,
+                                "frame": frame,
+                                "cracking_command": cracking,
+                            }
+                        )
 
             result = {
                 "filepath": str(validated_path),

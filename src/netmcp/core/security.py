@@ -8,17 +8,19 @@ from ipaddress import AddressValueError, NetmaskValueError, ip_address, ip_netwo
 from pathlib import Path
 
 # Patterns for input validation
-_SHELL_META = re.compile(r'[;|&$`(){}!]')
-_INTERFACE_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9:_\-\.]{0,255}$')
-_HOSTNAME_RE = re.compile(r'^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$')
+_SHELL_META = re.compile(r"[;|&$`(){}!]")
+_INTERFACE_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9:_\-\.]{0,255}$")
+_HOSTNAME_RE = re.compile(
+    r"^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$"
+)
 
 # File constraints
 _ALLOWED_EXTENSIONS = {".pcap", ".pcapng", ".cap"}
 _MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 
 # Rate limiting defaults
-_DEFAULT_RATE_LIMIT = 10       # max operations
-_DEFAULT_RATE_WINDOW = 3600    # seconds (1 hour)
+_DEFAULT_RATE_LIMIT = 10  # max operations
+_DEFAULT_RATE_WINDOW = 3600  # seconds (1 hour)
 
 
 class SecurityValidator:
@@ -203,6 +205,7 @@ class SecurityValidator:
         """Check if the process is running with elevated privileges."""
         if os.name == "nt":
             import ctypes
+
             try:
                 return bool(ctypes.windll.shell32.IsUserAnAdmin())
             except Exception:

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 try:
     import nmap
+
     _NMAP_AVAILABLE = True
 except ImportError:
     _NMAP_AVAILABLE = False
@@ -19,6 +20,7 @@ class NmapNotFoundError(Exception):
 @dataclass
 class NmapResult:
     """Result from an nmap operation."""
+
     scan_type: str
     target: str
     data: dict
@@ -68,7 +70,11 @@ class NmapInterface:
         def _scan() -> dict:
             try:
                 scanner.scan(hosts=target, arguments=arguments)
-                return dict(scanner.scaninfo()) if hasattr(scanner, "scaninfo") else scanner.all_hosts()
+                return (
+                    dict(scanner.scaninfo())
+                    if hasattr(scanner, "scaninfo")
+                    else scanner.all_hosts()
+                )
             except nmap.PortScannerError as e:
                 raise RuntimeError(f"Nmap scan error: {e}") from e
             except subprocess.SubprocessError as e:

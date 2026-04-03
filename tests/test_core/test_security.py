@@ -161,7 +161,9 @@ class TestValidateCaptureFilter:
 class TestValidateDisplayFilter:
     def test_valid_filters(self, validator):
         assert validator.validate_display_filter("http") == "http"
-        assert validator.validate_display_filter("ip.addr == 192.168.1.1") == "ip.addr == 192.168.1.1"
+        assert (
+            validator.validate_display_filter("ip.addr == 192.168.1.1") == "ip.addr == 192.168.1.1"
+        )
         assert validator.validate_display_filter("tcp.port == 80") == "tcp.port == 80"
         assert validator.validate_display_filter("") == ""
 

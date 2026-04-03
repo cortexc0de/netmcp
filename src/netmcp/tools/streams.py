@@ -7,7 +7,9 @@ from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
 
 
-def register_stream_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator) -> None:
+def register_stream_tools(
+    mcp: FastMCP, tshark: TsharkInterface, fmt: OutputFormatter, sec: SecurityValidator
+) -> None:
     """Register stream-related MCP tools."""
 
     @mcp.tool()
@@ -26,7 +28,9 @@ def register_stream_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
-            stream = await tshark.follow_stream(str(validated_path), stream_index, "tcp", output_format)
+            stream = await tshark.follow_stream(
+                str(validated_path), stream_index, "tcp", output_format
+            )
             return fmt.format_success(
                 {"filepath": str(validated_path), "stream_index": stream_index, "content": stream},
                 title=f"TCP Stream #{stream_index}",
@@ -50,7 +54,9 @@ def register_stream_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
-            stream = await tshark.follow_stream(str(validated_path), stream_index, "udp", output_format)
+            stream = await tshark.follow_stream(
+                str(validated_path), stream_index, "udp", output_format
+            )
             return fmt.format_success(
                 {"filepath": str(validated_path), "stream_index": stream_index, "content": stream},
                 title=f"UDP Stream #{stream_index}",

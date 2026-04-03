@@ -119,6 +119,7 @@ class TestScanPCAP:
                     stdout="192.168.1.100\n10.0.0.1\n8.8.8.8\n",
                 )
                 from netmcp.interfaces.tshark import TsharkInterface
+
                 tshark = TsharkInterface()
 
                 iface = ThreatIntelInterface(abuseipdb_key=None, providers=["urlhaus"])

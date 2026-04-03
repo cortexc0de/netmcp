@@ -101,8 +101,22 @@ class TestReadPcap:
     @pytest.mark.asyncio
     async def test_read_pcap_json(self, mock_pcap):
         packets = [
-            {"_source": {"layers": {"frame": {"number": "1"}, "ip": {"src": "10.0.0.1", "dst": "10.0.0.2"}}}},
-            {"_source": {"layers": {"frame": {"number": "2"}, "ip": {"src": "10.0.0.2", "dst": "10.0.0.1"}}}},
+            {
+                "_source": {
+                    "layers": {
+                        "frame": {"number": "1"},
+                        "ip": {"src": "10.0.0.1", "dst": "10.0.0.2"},
+                    }
+                }
+            },
+            {
+                "_source": {
+                    "layers": {
+                        "frame": {"number": "2"},
+                        "ip": {"src": "10.0.0.2", "dst": "10.0.0.1"},
+                    }
+                }
+            },
         ]
         with patch("shutil.which", return_value="/usr/bin/tshark"):
             with patch("subprocess.run") as mock_run:
@@ -141,7 +155,9 @@ class TestReadPcap:
     async def tshark_error_raises(self, mock_pcap):
         with patch("shutil.which", return_value="/usr/bin/tshark"):
             with patch("subprocess.run") as mock_run:
-                mock_run.side_effect = subprocess.CalledProcessError(1, "tshark", stderr="invalid pcap")
+                mock_run.side_effect = subprocess.CalledProcessError(
+                    1, "tshark", stderr="invalid pcap"
+                )
                 iface = TsharkInterface()
                 with pytest.raises(subprocess.CalledProcessError):
                     await iface.read_pcap(str(mock_pcap))
@@ -181,7 +197,9 @@ class TestFollowStream:
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0, stdout=stream_data)
                 iface = TsharkInterface()
-                result = await iface.follow_stream(str(mock_pcap), stream_idx=0, proto="tcp", fmt="ascii")
+                result = await iface.follow_stream(
+                    str(mock_pcap), stream_idx=0, proto="tcp", fmt="ascii"
+                )
                 assert "GET / HTTP/1.1" in result
                 assert "200 OK" in result
 

@@ -24,25 +24,52 @@ def mock_tshark():
     """Fully mocked TsharkInterface."""
     with patch("netmcp.interfaces.tshark.find_tshark", return_value="/usr/bin/tshark"):
         from netmcp.interfaces.tshark import TsharkInterface
+
         tshark = TsharkInterface()
         tshark.list_interfaces = AsyncMock(return_value=["eth0", "lo", "docker0"])
         tshark.capture_live = AsyncMock(return_value=Path("/tmp/test.pcap"))
-        tshark.read_pcap = AsyncMock(return_value=[
-            {"_source": {"layers": {"ip.src": ["10.0.0.1"], "ip.dst": ["10.0.0.2"],
-                                     "frame.number": ["1"]}}}
-        ])
-        tshark.protocol_stats = AsyncMock(return_value={"tcp": {"frames": 100, "bytes": 12000}, "udp": {"frames": 50, "bytes": 6000}})
-        tshark.follow_stream = AsyncMock(return_value="GET / HTTP/1.1\r\nHost: example.com\r\n\r\nHTTP/1.1 200 OK\r\n\r\nHello World")
-        tshark.list_streams = AsyncMock(return_value=[
-            {"endpoint_a": "192.168.1.1:443", "endpoint_b": "10.0.0.1:54321"}
-        ])
-        tshark.export_fields = AsyncMock(return_value=[
-            {"http.request.method": "GET", "http.host": "example.com", "http.request.uri": "/",
-             "http.response.code": "200", "http.user_agent": "Mozilla/5.0", "frame.number": "1"},
-            {"http.authbasic": "dXNlcjpwYXNz", "frame.number": "2"},
-        ])
+        tshark.read_pcap = AsyncMock(
+            return_value=[
+                {
+                    "_source": {
+                        "layers": {
+                            "ip.src": ["10.0.0.1"],
+                            "ip.dst": ["10.0.0.2"],
+                            "frame.number": ["1"],
+                        }
+                    }
+                }
+            ]
+        )
+        tshark.protocol_stats = AsyncMock(
+            return_value={
+                "tcp": {"frames": 100, "bytes": 12000},
+                "udp": {"frames": 50, "bytes": 6000},
+            }
+        )
+        tshark.follow_stream = AsyncMock(
+            return_value="GET / HTTP/1.1\r\nHost: example.com\r\n\r\nHTTP/1.1 200 OK\r\n\r\nHello World"
+        )
+        tshark.list_streams = AsyncMock(
+            return_value=[{"endpoint_a": "192.168.1.1:443", "endpoint_b": "10.0.0.1:54321"}]
+        )
+        tshark.export_fields = AsyncMock(
+            return_value=[
+                {
+                    "http.request.method": "GET",
+                    "http.host": "example.com",
+                    "http.request.uri": "/",
+                    "http.response.code": "200",
+                    "http.user_agent": "Mozilla/5.0",
+                    "frame.number": "1",
+                },
+                {"http.authbasic": "dXNlcjpwYXNz", "frame.number": "2"},
+            ]
+        )
         tshark.export_json = AsyncMock(return_value=[{"_source": {"layers": {}}}])
-        tshark.file_info = AsyncMock(return_value={"filepath": "/tmp/test.pcap", "total_frames": "150"})
+        tshark.file_info = AsyncMock(
+            return_value={"filepath": "/tmp/test.pcap", "total_frames": "150"}
+        )
         tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
         yield tshark
 
@@ -51,14 +78,55 @@ def mock_tshark():
 def mock_nmap():
     """Mocked NmapInterface."""
     from netmcp.interfaces.nmap import NmapInterface
+
     nmap = NmapInterface.__new__(NmapInterface)
     nmap.available = True
-    nmap.port_scan = AsyncMock(return_value={"scan": {"10.0.0.1": {"tcp": {80: {"state": "open", "name": "http"}, 443: {"state": "open", "name": "https"}}}}})
-    nmap.service_detect = AsyncMock(return_value={"scan": {"10.0.0.1": {"tcp": {80: {"state": "open", "name": "http", "product": "nginx", "version": "1.18.0"}}}}})
-    nmap.os_detect = AsyncMock(return_value={"scan": {"10.0.0.1": {"osmatch": [{"name": "Linux 5.4", "accuracy": "95"}]}}})
-    nmap.vuln_scan = AsyncMock(return_value={"scan": {"10.0.0.1": {"tcp": {443: {"state": "open", "script": {"ssl-enum-ciphers": "TLSv1.2"}}}}}})
-    nmap.quick_scan = AsyncMock(return_value={"scan": {"10.0.0.1": {"tcp": {80: {"state": "open", "name": "http"}}}}})
-    nmap.comprehensive_scan = AsyncMock(return_value={"scan": {"10.0.0.1": {"tcp": {80: {"state": "open"}}}}})
+    nmap.port_scan = AsyncMock(
+        return_value={
+            "scan": {
+                "10.0.0.1": {
+                    "tcp": {
+                        80: {"state": "open", "name": "http"},
+                        443: {"state": "open", "name": "https"},
+                    }
+                }
+            }
+        }
+    )
+    nmap.service_detect = AsyncMock(
+        return_value={
+            "scan": {
+                "10.0.0.1": {
+                    "tcp": {
+                        80: {
+                            "state": "open",
+                            "name": "http",
+                            "product": "nginx",
+                            "version": "1.18.0",
+                        }
+                    }
+                }
+            }
+        }
+    )
+    nmap.os_detect = AsyncMock(
+        return_value={"scan": {"10.0.0.1": {"osmatch": [{"name": "Linux 5.4", "accuracy": "95"}]}}}
+    )
+    nmap.vuln_scan = AsyncMock(
+        return_value={
+            "scan": {
+                "10.0.0.1": {
+                    "tcp": {443: {"state": "open", "script": {"ssl-enum-ciphers": "TLSv1.2"}}}
+                }
+            }
+        }
+    )
+    nmap.quick_scan = AsyncMock(
+        return_value={"scan": {"10.0.0.1": {"tcp": {80: {"state": "open", "name": "http"}}}}}
+    )
+    nmap.comprehensive_scan = AsyncMock(
+        return_value={"scan": {"10.0.0.1": {"tcp": {80: {"state": "open"}}}}}
+    )
     return nmap
 
 
@@ -66,26 +134,32 @@ def mock_nmap():
 def mock_threat():
     """Mocked ThreatIntelInterface."""
     from netmcp.interfaces.threat_intel import ThreatIntelInterface
+
     threat = ThreatIntelInterface.__new__(ThreatIntelInterface)
     threat.abuseipdb_key = "test-key"
     threat.providers = ["urlhaus", "abuseipdb"]
-    threat.check_ip = AsyncMock(return_value={
-        "ip": "10.0.0.1",
-        "is_threat": False,
-        "threat_providers": [],
-        "providers": {"urlhaus": {"threat": False, "provider": "urlhaus"}},
-    })
-    threat.scan_pcap = AsyncMock(return_value={
-        "filepath": "/tmp/test.pcap",
-        "total_ips": 5,
-        "threats_found": 1,
-        "threat_ips": ["10.0.0.1"],
-        "ip_results": {"10.0.0.1": {"is_threat": True}},
-    })
+    threat.check_ip = AsyncMock(
+        return_value={
+            "ip": "10.0.0.1",
+            "is_threat": False,
+            "threat_providers": [],
+            "providers": {"urlhaus": {"threat": False, "provider": "urlhaus"}},
+        }
+    )
+    threat.scan_pcap = AsyncMock(
+        return_value={
+            "filepath": "/tmp/test.pcap",
+            "total_ips": 5,
+            "threats_found": 1,
+            "threat_ips": ["10.0.0.1"],
+            "ip_results": {"10.0.0.1": {"is_threat": True}},
+        }
+    )
     return threat
 
 
 # ── Capture Tools ───────────────────────────────────────────────────
+
 
 class TestCaptureTools:
     @pytest.mark.asyncio
@@ -107,6 +181,7 @@ class TestCaptureTools:
 
 
 # ── Analysis Tools ──────────────────────────────────────────────────
+
 
 class TestAnalysisTools:
     @pytest.mark.asyncio
@@ -147,6 +222,7 @@ class TestAnalysisTools:
 
 # ── Stream Tools ────────────────────────────────────────────────────
 
+
 class TestStreamTools:
     @pytest.mark.asyncio
     async def test_follow_stream(self, mock_tshark, tmp_path):
@@ -168,6 +244,7 @@ class TestStreamTools:
 
 
 # ── Nmap Tools ──────────────────────────────────────────────────────
+
 
 class TestNmapTools:
     @pytest.mark.asyncio
@@ -208,6 +285,7 @@ class TestNmapTools:
 
 # ── Threat Intel Tools ──────────────────────────────────────────────
 
+
 class TestThreatTools:
     @pytest.mark.asyncio
     async def test_check_ip_threat_intel(self, mock_threat):
@@ -226,6 +304,7 @@ class TestThreatTools:
 
 # ── Credential Tools ────────────────────────────────────────────────
 
+
 class TestCredentialTools:
     @pytest.mark.asyncio
     async def test_extract_http_basic(self, mock_tshark, tmp_path):
@@ -233,14 +312,23 @@ class TestCredentialTools:
         pcap = tmp_path / "test.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(return_value=[
-            {"http.authbasic": "dXNlcjpwYXNz", "frame.number": "1"},
-            {"ftp.request.command": "USER", "ftp.request.arg": "admin", "frame.number": "2"},
-            {"ftp.request.command": "PASS", "ftp.request.arg": "secret123", "frame.number": "3"},
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            return_value=[
+                {"http.authbasic": "dXNlcjpwYXNz", "frame.number": "1"},
+                {"ftp.request.command": "USER", "ftp.request.arg": "admin", "frame.number": "2"},
+                {
+                    "ftp.request.command": "PASS",
+                    "ftp.request.arg": "secret123",
+                    "frame.number": "3",
+                },
+            ]
+        )
 
         import base64
-        rows = await mock_tshark.export_fields(str(pcap), ["http.authbasic", "ftp.request.command", "ftp.request.arg", "frame.number"])
+
+        rows = await mock_tshark.export_fields(
+            str(pcap), ["http.authbasic", "ftp.request.command", "ftp.request.arg", "frame.number"]
+        )
 
         # Verify the base64 credential is correct
         assert rows[0]["http.authbasic"] == "dXNlcjpwYXNz"

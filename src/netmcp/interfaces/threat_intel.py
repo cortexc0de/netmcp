@@ -25,6 +25,7 @@ THREAT_THRESHOLD = 50
 @dataclass
 class CacheEntry:
     """A single cache entry with timestamp."""
+
     data: Any
     timestamp: float
 
@@ -222,13 +223,12 @@ class ThreatIntelInterface:
 
         # Overall threat assessment
         any_threat = any(
-            p.get("threat", False)
-            for p in results["providers"].values()
-            if isinstance(p, dict)
+            p.get("threat", False) for p in results["providers"].values() if isinstance(p, dict)
         )
         results["is_threat"] = any_threat
         results["threat_providers"] = [
-            name for name, p in results["providers"].items()
+            name
+            for name, p in results["providers"].items()
             if isinstance(p, dict) and p.get("threat", False)
         ]
 
@@ -271,7 +271,7 @@ class ThreatIntelInterface:
         batch_size = 10
 
         for i in range(0, len(ips), batch_size):
-            batch = list(ips)[i:i + batch_size]
+            batch = list(ips)[i : i + batch_size]
             tasks = [self.check_ip(ip, providers) for ip in batch]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -283,7 +283,8 @@ class ThreatIntelInterface:
 
         # Summary
         threats = {
-            ip: r for ip, r in ip_results.items()
+            ip: r
+            for ip, r in ip_results.items()
             if isinstance(r, dict) and r.get("is_threat", False)
         }
 

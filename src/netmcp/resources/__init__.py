@@ -19,13 +19,17 @@ def register_resources(
     def get_interfaces() -> str:
         """Dynamic list of available network interfaces."""
         import asyncio
+
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 # Can't await directly, use run_until_complete
                 import concurrent.futures
+
                 with concurrent.futures.ThreadPoolExecutor() as pool:
-                    interfaces = loop.run_in_executor(pool, lambda: asyncio.run(tshark.list_interfaces()))
+                    interfaces = loop.run_in_executor(
+                        pool, lambda: asyncio.run(tshark.list_interfaces())
+                    )
                     # For sync context, we need a different approach
                     return "Use get_network_interfaces tool for interface list"
             else:
@@ -50,9 +54,13 @@ def register_resources(
         for d in search_dirs:
             if d.exists():
                 for f in d.glob("*.pcap"):
-                    captures.append({"path": str(f), "size_mb": round(f.stat().st_size / 1024 / 1024, 2)})
+                    captures.append(
+                        {"path": str(f), "size_mb": round(f.stat().st_size / 1024 / 1024, 2)}
+                    )
                 for f in d.glob("*.pcapng"):
-                    captures.append({"path": str(f), "size_mb": round(f.stat().st_size / 1024 / 1024, 2)})
+                    captures.append(
+                        {"path": str(f), "size_mb": round(f.stat().st_size / 1024 / 1024, 2)}
+                    )
 
         return fmt.format_json({"count": len(captures), "files": captures})
 
