@@ -508,3 +508,143 @@ def register_analysis_tools(
             return fmt.format_success(result, title="GeoIP Lookup")
         except Exception as e:
             return fmt.format_error(e)
+
+    # ── DNS Analysis ────────────────────────────────────────────────────
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Analyze DNS Traffic",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def analyze_dns_traffic(filepath: str, max_queries: int = 1000) -> dict:
+        """Analyze DNS queries and responses from a PCAP file.
+
+        Extracts DNS query names, types, response codes, and identifies
+        potential DNS tunneling or suspicious patterns.
+
+        Args:
+            filepath: Path to PCAP/PCAPNG file
+            max_queries: Maximum number of DNS rows to process
+        """
+        try:
+            validated = sec.sanitize_filepath(filepath)
+
+            dns_fields = [
+                "dns.qry.name",
+                "dns.qry.type",
+                "dns.flags.rcode",
+                "dns.resp.name",
+                "dns.a",
+                "dns.aaaa",
+                "ip.src",
+                "ip.dst",
+            ]
+            rows = await tshark.export_fields(str(validated), dns_fields, "dns")
+
+            queries: dict[str, int] = {}
+            nxdomains: list[str] = []
+            for row in rows[:max_queries]:
+                qname = row.get("dns.qry.name", "")
+                rcode = row.get("dns.flags.rcode", "")
+                if qname:
+                    queries[qname] = queries.get(qname, 0) + 1
+                if rcode == "3":  # NXDOMAIN
+                    nxdomains.append(qname)
+
+            top_domains = sorted(queries.items(), key=lambda x: x[1], reverse=True)[:20]
+            unique_nxdomains = list(set(nxdomains))[:50]
+
+            # Detect potential DNS tunneling (unusually long subdomain names)
+            suspicious = [q for q in queries if len(q) > 60 or q.count(".") > 6]
+
+            return fmt.format_success(
+                {
+                    "total_dns_packets": len(rows),
+                    "unique_queries": len(queries),
+                    "top_domains": [{"domain": d, "count": c} for d, c in top_domains],
+                    "nxdomain_count": len(nxdomains),
+                    "nxdomains": unique_nxdomains,
+                    "suspicious_domains": suspicious[:20],
+                    "potential_tunneling": len(suspicious) > 0,
+                },
+                title="DNS Analysis",
+            )
+        except Exception as e:
+            return fmt.format_error(e)
+
+    # ── Expert Information ──────────────────────────────────────────────
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Expert Information",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def get_expert_info(filepath: str) -> dict:
+        """Extract Wireshark expert information from a PCAP file.
+
+        Returns warnings, errors, and notes from Wireshark's expert system.
+        Useful for identifying protocol violations, malformed packets, etc.
+
+        Args:
+            filepath: Path to PCAP/PCAPNG file
+        """
+        try:
+            validated = sec.sanitize_filepath(filepath)
+
+            result = await tshark._run(
+                ["-r", str(validated), "-z", "expert", "-q"],
+                timeout=60.0,
+            )
+
+            entries: dict[str, list[str]] = {
+                "error": [],
+                "warning": [],
+                "note": [],
+                "chat": [],
+            }
+            current_severity: str | None = None
+            for line in result.stdout.split("\n"):
+                line = line.strip()
+                if not line or line.startswith("="):
+                    continue
+                lower = line.lower()
+                if "errors" in lower and "(" in lower:
+                    current_severity = "error"
+                    continue
+                elif "warnings" in lower and "(" in lower:
+                    current_severity = "warning"
+                    continue
+                elif "notes" in lower and "(" in lower:
+                    current_severity = "note"
+                    continue
+                elif "chats" in lower and "(" in lower:
+                    current_severity = "chat"
+                    continue
+                if current_severity and line:
+                    entries[current_severity].append(line)
+
+            return fmt.format_success(
+                {
+                    "errors": entries["error"][:50],
+                    "warnings": entries["warning"][:50],
+                    "notes": entries["note"][:50],
+                    "chats": entries["chat"][:20],
+                    "summary": {
+                        "error_count": len(entries["error"]),
+                        "warning_count": len(entries["warning"]),
+                        "note_count": len(entries["note"]),
+                        "chat_count": len(entries["chat"]),
+                    },
+                },
+                title="Expert Information",
+            )
+        except Exception as e:
+            return fmt.format_error(e)
