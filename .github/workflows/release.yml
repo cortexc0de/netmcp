@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  ci:
+    name: "CI checks"
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: "Create GitHub Release"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [ci]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Find previous tag
+          PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
+          if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "${{ github.ref_name }}" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "## What's Changed" > changelog.md
+          echo "" >> changelog.md
+          git log "${PREV_TAG}..${{ github.ref_name }}" --pretty=format:"- %s (%h)" --no-merges >> changelog.md
+          echo "" >> changelog.md
+          echo "" >> changelog.md
+          echo "## Docker Images" >> changelog.md
+          echo "" >> changelog.md
+          echo '```' >> changelog.md
+          echo "docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> changelog.md
+          echo '```' >> changelog.md
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Build wheel
+        run: |
+          pip install --quiet build
+          python -m build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        with:
+          body_path: changelog.md
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
