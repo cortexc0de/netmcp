@@ -272,4 +272,7 @@ class TestIsPrivileged:
 
     def test_allow_parens_in_bpf(self, validator):
         """Parentheses are valid in BPF filters and should be allowed."""
-        assert validator.validate_capture_filter("tcp and (port 80 or port 443)") == "tcp and (port 80 or port 443)"
+        assert (
+            validator.validate_capture_filter("tcp and (port 80 or port 443)")
+            == "tcp and (port 80 or port 443)"
+        )
