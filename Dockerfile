@@ -1,5 +1,5 @@
 # ── Build stage ──────────────────────────────────────────────────────
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /build
 COPY pyproject.toml README.md ./
@@ -8,7 +8,7 @@ COPY src/ src/
 RUN pip install --no-cache-dir build && python -m build
 
 # ── Runtime stage ────────────────────────────────────────────────────
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 LABEL org.opencontainers.image.source="https://github.com/cortexc0de/netmcp"
 LABEL org.opencontainers.image.description="Professional-grade network analysis MCP server"
