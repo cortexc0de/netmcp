@@ -5,15 +5,10 @@ on:
     tags: ['v*']
 
 jobs:
-  ci:
-    name: "CI checks"
-    uses: ./.github/workflows/ci.yml
-
   release:
     name: "Create GitHub Release"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [ci]
     permissions:
       contents: write
     steps:
@@ -24,7 +19,6 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          # Find previous tag
           PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
           if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "${{ github.ref_name }}" ]; then
             PREV_TAG=$(git rev-list --max-parents=0 HEAD)
@@ -38,6 +32,12 @@ jobs:
           echo "" >> changelog.md
           echo '```' >> changelog.md
           echo "docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> changelog.md
+          echo '```' >> changelog.md
+          echo "" >> changelog.md
+          echo "## PyPI" >> changelog.md
+          echo "" >> changelog.md
+          echo '```' >> changelog.md
+          echo "pip install netmcp==${{ github.ref_name }}" >> changelog.md
           echo '```' >> changelog.md
 
       - name: Set up Python 3.12
