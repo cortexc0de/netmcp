@@ -116,6 +116,9 @@ def register_capture_tools(
         """
         try:
             sec.validate_interface(interface)
+            if not sec.check_rate_limit("live_capture", max_ops=30, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 30 live captures per hour")
+            sec.audit_log("quick_capture", {"interface": interface, "packet_count": packet_count})
 
             pcap_path = await tshark.capture_live(
                 interface=interface,
@@ -208,41 +211,49 @@ def register_capture_tools(
                 timeout=float(duration),
             )
 
-            import shutil
-            from pathlib import Path
-
-            dest = Path(output_file)
-            if not dest.is_absolute():
-                dest = Path.cwd() / dest
-
-            # Security: validate output path
             try:
-                dest = dest.resolve(strict=False)
-            except (OSError, ValueError):
-                raise ValueError(f"Invalid output path: {output_file!r}") from None
+                import shutil
+                from pathlib import Path
 
-            if ".." in Path(output_file).parts:
-                raise ValueError(f"Path traversal not allowed in output: {output_file!r}")
+                dest = Path(output_file)
+                if not dest.is_absolute():
+                    dest = Path.cwd() / dest
 
-            allowed_ext = {".pcap", ".pcapng", ".cap"}
-            if dest.suffix.lower() not in allowed_ext:
-                raise ValueError(
-                    f"Invalid output extension: {dest.suffix!r}. Allowed: {', '.join(sorted(allowed_ext))}"
+                # Security: validate output path
+                try:
+                    dest = dest.resolve(strict=False)
+                except (OSError, ValueError):
+                    raise ValueError(f"Invalid output path: {output_file!r}") from None
+
+                if ".." in Path(output_file).parts:
+                    raise ValueError(f"Path traversal not allowed in output: {output_file!r}")
+
+                allowed_ext = {".pcap", ".pcapng", ".cap"}
+                if dest.suffix.lower() not in allowed_ext:
+                    raise ValueError(
+                        f"Invalid output extension: {dest.suffix!r}. Allowed: {', '.join(sorted(allowed_ext))}"
+                    )
+
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(str(pcap_path), str(dest))
+
+                return fmt.format_success(
+                    {
+                        "interface": interface,
+                        "duration": duration,
+                        "filter": bpf_filter,
+                        "packets_captured": packet_count,
+                        "output_file": str(dest),
+                        "file_size_bytes": dest.stat().st_size,
+                    },
+                    title="Capture Saved",
                 )
+            finally:
+                import os
 
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(str(pcap_path), str(dest))
-
-            return fmt.format_success(
-                {
-                    "interface": interface,
-                    "duration": duration,
-                    "filter": bpf_filter,
-                    "packets_captured": packet_count,
-                    "output_file": str(dest),
-                    "file_size_bytes": dest.stat().st_size,
-                },
-                title="Capture Saved",
-            )
+                try:
+                    os.unlink(str(pcap_path))
+                except OSError:
+                    pass
         except Exception as e:
             return fmt.format_error(e, "NETMCP_003")

@@ -56,7 +56,7 @@ def create_server() -> FastMCP:
         tshark = None  # type: ignore
 
     # Nmap
-    nmap = NmapInterface()
+    nmap = NmapInterface(security=sec)
 
     # Threat Intelligence
     abuseipdb_key = os.environ.get("ABUSEIPDB_API_KEY") or None

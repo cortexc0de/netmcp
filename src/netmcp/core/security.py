@@ -275,9 +275,12 @@ class SecurityValidator:
         except ValueError:
             raise ValueError(f"Malformed nmap arguments: {arguments!r}") from None
 
-        for token in tokens:
-            # Skip port specs and target-like args
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            # Skip non-flag tokens (targets, port specs after -p, etc.)
             if not token.startswith("-"):
+                i += 1
                 continue
 
             # Check for dangerous patterns
@@ -285,18 +288,34 @@ class SecurityValidator:
                 if token.startswith(dangerous):
                     raise ValueError(f"Dangerous nmap flag not allowed: {token!r}")
 
-            # Extract the flag (handle -p80 style)
+            # Extract the flag (handle --flag=value and -pN style)
             flag = token.split("=")[0] if "=" in token else token
-            # Allow -p (port spec) and --script with known scripts
-            if flag in ("-p", "--script"):
-                if flag == "--script":
-                    # Only allow 'vuln' and 'default' script categories
-                    script_val = token.split("=", 1)[1] if "=" in token else ""
-                    if script_val and script_val not in ("vuln", "default", "safe"):
-                        raise ValueError(f"Nmap script not in allowed list: {script_val!r}")
+
+            # Handle -p (port spec) — may be -p, -p80, -p80,443
+            if flag == "-p" or (flag.startswith("-p") and not flag.startswith("-p-") and len(flag) > 2 and flag[2:3].isdigit()):
+                if flag == "-p" and "=" not in token:
+                    i += 1  # skip the port spec value
+                i += 1
+                continue
+
+            # Handle --script — require =value form or consume next token
+            if flag == "--script":
+                if "=" in token:
+                    script_val = token.split("=", 1)[1]
+                elif i + 1 < len(tokens) and not tokens[i + 1].startswith("-"):
+                    script_val = tokens[i + 1]
+                    i += 1  # consume the script name token
+                else:
+                    raise ValueError("--script requires a script name")
+
+                if script_val not in ("vuln", "default", "safe"):
+                    raise ValueError(f"Nmap script not in allowed list: {script_val!r}")
+                i += 1
                 continue
 
             if flag not in self._ALLOWED_NMAP_FLAGS:
                 raise ValueError(f"Nmap flag not in allowed list: {flag!r}")
+
+            i += 1
 
         return arguments

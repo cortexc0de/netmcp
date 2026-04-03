@@ -148,6 +148,12 @@ def register_analysis_tools(
         """
         try:
             sec.validate_interface(interface)
+            if not sec.check_rate_limit("live_capture", max_ops=30, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 30 live captures per hour")
+            sec.audit_log("capture_targeted_traffic", {
+                "interface": interface, "target_host": target_host,
+                "target_port": target_port, "protocol": protocol,
+            })
 
             # Build BPF filter
             filter_parts = []

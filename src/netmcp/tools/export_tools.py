@@ -56,6 +56,8 @@ def register_export_tools(
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
+            if display_filter:
+                sec.validate_display_filter(display_filter)
             packets = await tshark.export_json(str(validated_path), display_filter, max_packets)
             return fmt.format_success(
                 {
@@ -92,6 +94,8 @@ def register_export_tools(
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
+            if display_filter:
+                sec.validate_display_filter(display_filter)
             field_list = (
                 [f.strip() for f in fields.split(",")] if fields else _DEFAULT_EXPORT_FIELDS
             )

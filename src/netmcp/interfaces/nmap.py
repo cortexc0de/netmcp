@@ -1,9 +1,15 @@
 """Nmap interface for network scanning and service detection."""
 
+from __future__ import annotations
+
 import asyncio
 import shutil
 import subprocess
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from netmcp.core.security import SecurityValidator
 
 try:
     import nmap
@@ -34,14 +40,15 @@ class NmapInterface:
     Never auto-escalates privileges. Detects when root is required.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, security: SecurityValidator | None = None) -> None:
         self.available = shutil.which("nmap") is not None and _NMAP_AVAILABLE
         self._scanner: nmap.PortScanner | None = None
+        self._security = security
 
     def __repr__(self) -> str:
         return f"NmapInterface(available={self.available})"
 
-    def _get_scanner(self) -> "nmap.PortScanner":
+    def _get_scanner(self) -> nmap.PortScanner:
         """Get or create nmap PortScanner instance."""
         if not self.available:
             raise NmapNotFoundError(
@@ -63,6 +70,9 @@ class NmapInterface:
         timeout: float = 300.0,
     ) -> dict:
         """Run an nmap scan asynchronously."""
+        if self._security:
+            self._security.validate_nmap_arguments(arguments)
+
         scanner = self._get_scanner()
 
         loop = asyncio.get_running_loop()

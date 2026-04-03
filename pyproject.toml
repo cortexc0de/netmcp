@@ -53,10 +53,10 @@ dev = [
 netmcp = "netmcp.server:main"
 
 [project.urls]
-Homepage = "https://github.com/luxvtz/netmcp"
-Documentation = "https://github.com/luxvtz/netmcp#readme"
-Repository = "https://github.com/luxvtz/netmcp"
-Issues = "https://github.com/luxvtz/netmcp/issues"
+Homepage = "https://github.com/cortexc0de/netmcp"
+Documentation = "https://github.com/cortexc0de/netmcp#readme"
+Repository = "https://github.com/cortexc0de/netmcp"
+Issues = "https://github.com/cortexc0de/netmcp/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/netmcp"]

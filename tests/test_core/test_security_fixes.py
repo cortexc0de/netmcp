@@ -317,6 +317,7 @@ class TestNmapSingleScan:
         nmap_iface = NmapInterface.__new__(NmapInterface)
         nmap_iface.available = True
         nmap_iface._scanner = mock_scanner
+        nmap_iface._security = None
 
         await nmap_iface._run_scan("10.0.0.1", "-sT -T4", timeout=10.0)
 
@@ -334,6 +335,7 @@ class TestNmapSingleScan:
         nmap_iface = NmapInterface.__new__(NmapInterface)
         nmap_iface.available = True
         nmap_iface._scanner = mock_scanner
+        nmap_iface._security = None
 
         result = await nmap_iface._run_scan("10.0.0.1", "-F -T4", timeout=10.0)
         assert result == expected
