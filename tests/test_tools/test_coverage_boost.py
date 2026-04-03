@@ -464,7 +464,7 @@ class TestThreatCoverage:
         )
         mcp = FastMCP("test")
         register_threat_tools(mcp, mock_tshark, mock_threat, fmt, sec)
-        with patch.object(sec, 'sanitize_filepath', return_value=Path('/tmp/test.pcap')):
+        with patch.object(sec, "sanitize_filepath", return_value=Path("/tmp/test.pcap")):
             result = await call(mcp, "scan_capture_for_threats", filepath="/tmp/test.pcap")
         assert result["isError"] is False
         return
