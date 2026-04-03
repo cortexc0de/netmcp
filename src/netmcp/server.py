@@ -11,6 +11,7 @@ import sys
 from mcp.server.fastmcp import FastMCP
 
 from netmcp.core.formatter import OutputFormatter
+from netmcp.core.history import CaptureHistory
 from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.nmap import NmapInterface
 from netmcp.interfaces.threat_intel import ThreatIntelInterface
@@ -19,6 +20,7 @@ from netmcp.prompts.workflows import register_prompts
 
 # Resources and prompts
 from netmcp.resources import register_resources
+from netmcp.tools.advanced import register_advanced_tools
 from netmcp.tools.analysis import register_analysis_tools
 
 # Tool registrations
@@ -57,6 +59,7 @@ def create_server(host: str = "0.0.0.0", port: int = 8080) -> FastMCP:
     # ── Initialize core components ──────────────────────────────────────
     sec = SecurityValidator()
     fmt = OutputFormatter()
+    history = CaptureHistory()
 
     # ── Initialize interfaces ───────────────────────────────────────────
     # Tshark
@@ -75,7 +78,7 @@ def create_server(host: str = "0.0.0.0", port: int = 8080) -> FastMCP:
     threat = ThreatIntelInterface(abuseipdb_key=abuseipdb_key)
 
     # ── Register Resources ──────────────────────────────────────────────
-    register_resources(mcp, tshark, nmap, fmt)
+    register_resources(mcp, tshark, nmap, fmt, history)
 
     # ── Register Prompts ───────────────────────────────────────────────
     register_prompts(mcp)
@@ -92,6 +95,7 @@ def create_server(host: str = "0.0.0.0", port: int = 8080) -> FastMCP:
         register_profile_tools(mcp, tshark, fmt, sec)
         register_pcap_tools(mcp, tshark, fmt, sec)
         register_flow_tls_tools(mcp, tshark, fmt, sec)
+        register_advanced_tools(mcp, tshark, fmt, sec)
 
     if nmap.available:
         register_nmap_tools(mcp, nmap, fmt, sec)

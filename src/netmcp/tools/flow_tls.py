@@ -393,6 +393,6 @@ def register_flow_tls_tools(
             if validated_output:
                 output["output_file"] = validated_output
 
-            return fmt.format_success(output, title="TLS Decryption Results")
+            return fmt.truncate_output(fmt.format_success(output, title="TLS Decryption Results"))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004" if isinstance(e, ValueError) else "NETMCP_003")

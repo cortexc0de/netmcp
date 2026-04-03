@@ -115,6 +115,25 @@ class OutputFormatter:
 
         return "\n".join(lines)
 
+    MAX_OUTPUT_CHARS = 500_000  # 500K chars to prevent LLM context overflow
+
+    def truncate_output(self, result: dict, max_chars: int = 0) -> dict:
+        """Truncate output to prevent LLM context overflow."""
+        limit = max_chars or self.MAX_OUTPUT_CHARS
+        text = result.get("content", [{}])[0].get("text", "")
+        if len(text) <= limit:
+            return result
+        truncated = text[:limit]
+        remaining = len(text) - limit
+        new_text = (
+            f"{truncated}\n\n⚠️ Вывод обрезан ({remaining:,} символов пропущено). "
+            f"Используйте фильтры для сужения результатов."
+        )
+        return {
+            "content": [{"type": "text", "text": new_text}],
+            "isError": result.get("isError", False),
+        }
+
     def truncate(self, text: str, max_chars: int = 720000) -> str:
         """Truncate text to max_chars with indicator."""
         if not text:

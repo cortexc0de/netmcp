@@ -1,6 +1,6 @@
 """PCAP streaming analysis tools for large files."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
@@ -26,6 +26,7 @@ def register_streaming_tools(
         filepath: str,
         chunk_size: int = 10000,
         display_filter: str = "",
+        ctx: Context | None = None,
     ) -> dict:
         """Analyze a large PCAP file in chunks for memory efficiency.
 
@@ -35,6 +36,7 @@ def register_streaming_tools(
             filepath: Path to PCAP/PCAPNG file
             chunk_size: Number of packets per processing chunk
             display_filter: Optional Wireshark display filter
+            ctx: Optional MCP context for progress reporting
         """
         try:
             validated = sec.sanitize_filepath(filepath)
@@ -46,6 +48,7 @@ def register_streaming_tools(
             ips_src: dict[str, int] = {}
             ips_dst: dict[str, int] = {}
             offset = 0
+            chunk_index = 0
 
             while True:
                 chunk_filter = (
@@ -53,6 +56,9 @@ def register_streaming_tools(
                 )
                 if display_filter:
                     chunk_filter = f"{chunk_filter} and {display_filter}"
+
+                if ctx:
+                    await ctx.report_progress(chunk_index, chunk_index + 1)
 
                 packets = await tshark.read_pcap(
                     str(validated),
@@ -80,9 +86,13 @@ def register_streaming_tools(
 
                 total_packets += len(packets)
                 offset += chunk_size
+                chunk_index += 1
 
                 if len(packets) < chunk_size:
                     break
+
+            if ctx:
+                await ctx.report_progress(chunk_index, chunk_index)
 
             top_protos = sorted(protocols.items(), key=lambda x: x[1], reverse=True)[:20]
             top_src = sorted(ips_src.items(), key=lambda x: x[1], reverse=True)[:20]

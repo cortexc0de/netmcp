@@ -114,7 +114,7 @@ def register_pcap_tools(
                     f"{len(protocol_diff)} protocol differences."
                 ),
             }
-            return fmt.format_success(result, title="PCAP Diff")
+            return fmt.truncate_output(fmt.format_success(result, title="PCAP Diff"))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
@@ -349,6 +349,6 @@ def register_pcap_tools(
                 "layers": layers,
                 "raw_output": raw_output,
             }
-            return fmt.format_success(data, title="Packet Decode")
+            return fmt.truncate_output(fmt.format_success(data, title="Packet Decode"))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")

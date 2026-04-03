@@ -1,11 +1,13 @@
 """MCP Resources for NetMCP."""
 
 import subprocess
+import time
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
 from netmcp.core.formatter import OutputFormatter
+from netmcp.core.history import CaptureHistory
 from netmcp.interfaces.nmap import NmapInterface
 from netmcp.interfaces.tshark import TsharkInterface
 
@@ -15,6 +17,7 @@ def register_resources(
     tshark: TsharkInterface,
     nmap: NmapInterface,
     fmt: OutputFormatter,
+    history: CaptureHistory | None = None,
 ) -> None:
     """Register MCP resources."""
 
@@ -94,3 +97,89 @@ def register_resources(
             ),
         }
         return fmt.format_json(info)
+
+    @mcp.resource("analysis://history")
+    async def get_analysis_history() -> str:
+        """Recent analysis history."""
+        if history is None:
+            return "History tracking not enabled."
+
+        entries = history.get_recent(20)
+        if not entries:
+            return "No analysis history yet."
+
+        lines = ["# Analysis History\n"]
+        for e in entries:
+            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(e.timestamp))
+            lines.append(f"- [{ts}] {e.tool_name}: {e.file_path}")
+            if e.summary:
+                lines.append(f"  {e.summary}")
+            if e.duration > 0:
+                lines.append(f"  Duration: {e.duration:.1f}s")
+        return "\n".join(lines)
+
+    @mcp.resource("network://help")
+    async def get_help() -> str:
+        """Comprehensive help and usage guide."""
+        return """# NetMCP — Network Analysis MCP Server
+
+## Quick Start
+- Analyze PCAP: `analyze_pcap(file_path="/path/to/capture.pcap")`
+- Live capture: `quick_capture(interface="eth0", duration=10)`
+- Scan network: `scan_network(target="192.168.1.0/24")`
+
+## Tool Categories
+
+### Capture & Analysis
+- `analyze_pcap` — Full PCAP analysis
+- `quick_capture` — Quick packet capture
+- `capture_targeted_traffic` — Filtered capture
+- `analyze_large_pcap` — Streaming analysis for large files
+
+### Protocol Analysis
+- `analyze_http_traffic` — HTTP request/response analysis
+- `analyze_dns_traffic` — DNS query/response analysis
+- `get_protocol_hierarchy` — Protocol distribution
+- `get_expert_info` — Wireshark expert warnings
+
+### Network Flows
+- `visualize_network_flows` — ASCII/Mermaid flow diagrams
+- `get_flow_statistics` — Flow statistics
+- `follow_stream` — TCP/UDP stream following
+
+### Security
+- `extract_credentials` — Credential extraction
+- `decrypt_tls_traffic` — TLS decryption
+- `analyze_tls_handshake` — TLS handshake analysis
+- `check_threat_intelligence` — Threat intel lookup
+
+### PCAP Tools
+- `diff_pcap_files` — Compare PCAPs
+- `merge_pcap_files` — Merge PCAPs
+- `slice_pcap` — Slice/filter PCAPs
+- `decode_packet` — Decode single packet
+
+### Network Scanning
+- `scan_network` — Nmap scan
+- `quick_scan` — Fast port scan
+- `scan_vulnerabilities` — Vulnerability scan
+
+### Export
+- `export_packets_json` — JSON export
+- `export_specific_fields` — Field extraction
+
+### Wireshark Profiles
+- `list_wireshark_profiles` — List profiles
+- `apply_profile_capture` — Analyze with profile
+- `get_color_filters` — Color filter rules
+
+## Resources
+- `system://info` — System status
+- `analysis://history` — Recent analysis history
+- `network://help` — This help text
+
+## Tips
+- Use display filters: `ip.addr == 10.0.0.1 && tcp.port == 443`
+- For large files, use `analyze_large_pcap` with chunking
+- Check `get_expert_info` for Wireshark warnings
+"""

@@ -59,14 +59,14 @@ def register_export_tools(
             if display_filter:
                 sec.validate_display_filter(display_filter)
             packets = await tshark.export_json(str(validated_path), display_filter, max_packets)
-            return fmt.format_success(
+            return fmt.truncate_output(fmt.format_success(
                 {
                     "filepath": str(validated_path),
                     "packet_count": len(packets),
                     "packets": packets[:500],
                 },
                 title="JSON Export",
-            )
+            ))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 

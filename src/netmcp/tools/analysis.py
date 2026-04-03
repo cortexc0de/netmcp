@@ -1,6 +1,6 @@
 """PCAP analysis tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
@@ -61,7 +61,7 @@ def register_analysis_tools(
                 "protocol_stats": stats,
                 "packets": packets[:50],
             }
-            return fmt.format_success(result, title="PCAP Analysis")
+            return fmt.truncate_output(fmt.format_success(result, title="PCAP Analysis"))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004" if isinstance(e, ValueError) else "NETMCP_003")
 
@@ -91,7 +91,7 @@ def register_analysis_tools(
                 "total_frames": total_frames,
                 "protocols": stats,
             }
-            return fmt.format_success(result, title="Protocol Statistics")
+            return fmt.truncate_output(fmt.format_success(result, title="Protocol Statistics"))
         except Exception as e:
             return fmt.format_error(e)
 
@@ -134,6 +134,7 @@ def register_analysis_tools(
         protocol: str = "",
         duration: int = 10,
         packet_limit: int = 500,
+        ctx: Context | None = None,
     ) -> dict:
         """
         Capture traffic targeted to specific host, port, or protocol.
@@ -145,6 +146,7 @@ def register_analysis_tools(
             protocol: Filter by protocol (tcp, udp, icmp, http)
             duration: Max capture duration in seconds
             packet_limit: Maximum packets to capture
+            ctx: Optional MCP context for progress reporting
         """
         try:
             sec.validate_interface(interface)
@@ -177,6 +179,9 @@ def register_analysis_tools(
 
             bpf = " and ".join(filter_parts) if filter_parts else ""
 
+            if ctx:
+                await ctx.report_progress(0, 2)
+
             pcap_path = await tshark.capture_live(
                 interface=interface,
                 bpf_filter=bpf,
@@ -185,6 +190,9 @@ def register_analysis_tools(
             )
 
             try:
+                if ctx:
+                    await ctx.report_progress(1, 2)
+
                 packets = await tshark.read_pcap(str(pcap_path))
                 result = {
                     "interface": interface,
@@ -194,6 +202,10 @@ def register_analysis_tools(
                     "pcap_file": str(pcap_path),
                     "packets": packets[:50],
                 }
+
+                if ctx:
+                    await ctx.report_progress(2, 2)
+
                 return fmt.format_success(result, title="Targeted Capture")
             finally:
                 import os
@@ -265,7 +277,7 @@ def register_analysis_tools(
                 "status_codes": status_codes,
                 "sample_requests": requests[:20],
             }
-            return fmt.format_success(result, title="HTTP Traffic Analysis")
+            return fmt.truncate_output(fmt.format_success(result, title="HTTP Traffic Analysis"))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 

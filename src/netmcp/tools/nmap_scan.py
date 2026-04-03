@@ -1,6 +1,6 @@
 """Nmap scanning tools."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
@@ -26,6 +26,7 @@ def register_nmap_tools(
         target: str,
         ports: str = "",
         scan_type: str = "connect",
+        ctx: Context | None = None,
     ) -> dict:
         """
         Scan a target for open ports.
@@ -34,6 +35,7 @@ def register_nmap_tools(
             target: IP address, hostname, or CIDR range
             ports: Port specification (e.g., '80,443', '1-1024'). Default: all common ports
             scan_type: Scan type: 'syn' (stealth, needs root), 'connect' (TCP), or 'udp'
+            ctx: Optional MCP context for progress reporting
         """
         try:
             if not nmap.available:
@@ -48,7 +50,14 @@ def register_nmap_tools(
             if scan_type not in ("syn", "connect", "udp"):
                 raise ValueError("scan_type must be 'syn', 'connect', or 'udp'")
 
+            if ctx:
+                await ctx.report_progress(0, 2)
+
             result = await nmap.port_scan(target, ports, scan_type)
+
+            if ctx:
+                await ctx.report_progress(2, 2)
+
             return fmt.format_success(
                 {"target": target, "scan_type": scan_type, "result": result}, title="Port Scan"
             )
