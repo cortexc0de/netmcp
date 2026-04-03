@@ -359,9 +359,7 @@ class TestRateLimiting:
             assert (
                 validator.check_rate_limit("live_capture", max_ops=30, window_seconds=3600) is True
             )
-        assert (
-            validator.check_rate_limit("live_capture", max_ops=30, window_seconds=3600) is False
-        )
+        assert validator.check_rate_limit("live_capture", max_ops=30, window_seconds=3600) is False
 
     def test_threat_intel_blocked_after_100(self, validator):
         """Threat intel returns error after 100 calls."""
@@ -369,9 +367,7 @@ class TestRateLimiting:
             assert (
                 validator.check_rate_limit("threat_intel", max_ops=100, window_seconds=3600) is True
             )
-        assert (
-            validator.check_rate_limit("threat_intel", max_ops=100, window_seconds=3600) is False
-        )
+        assert validator.check_rate_limit("threat_intel", max_ops=100, window_seconds=3600) is False
 
     def test_different_operations_independent(self, validator):
         """Exhausting one operation's limit must not affect another."""

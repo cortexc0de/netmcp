@@ -265,8 +265,7 @@ class TestGetColorFilters:
         profile_dir = tmp_path / "profiles" / "colorful"
         profile_dir.mkdir(parents=True)
         (profile_dir / "colorfilters").write_text(
-            "@HTTP@http@[0,0,0][128,255,128]\n"
-            "@DNS@dns@[0,0,128][200,200,255]\n"
+            "@HTTP@http@[0,0,0][128,255,128]\n@DNS@dns@[0,0,128][200,200,255]\n"
         )
 
         mcp = FastMCP("test")

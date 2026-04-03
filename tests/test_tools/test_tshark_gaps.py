@@ -34,9 +34,7 @@ def mock_tshark():
         tshark.convert_format = AsyncMock(
             return_value=MagicMock(returncode=0, stdout="", stderr="")
         )
-        tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="", stderr="")
-        )
+        tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
         yield tshark
 
 
@@ -67,8 +65,12 @@ class TestDecodePacketHexDump:
         mcp = FastMCP("test")
         register_pcap_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "decode_packet",
-            filepath=str(pcap), packet_number=1, verbose=True, hex_dump=True,
+            mcp,
+            "decode_packet",
+            filepath=str(pcap),
+            packet_number=1,
+            verbose=True,
+            hex_dump=True,
         )
 
         assert result["isError"] is False
@@ -85,16 +87,18 @@ class TestDecodePacketHexDump:
         pcap = tmp_path / "test.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
         mock_tshark._run = AsyncMock(
-            return_value=MagicMock(
-                returncode=0, stdout="Frame 1: 100 bytes\n", stderr=""
-            )
+            return_value=MagicMock(returncode=0, stdout="Frame 1: 100 bytes\n", stderr="")
         )
 
         mcp = FastMCP("test")
         register_pcap_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "decode_packet",
-            filepath=str(pcap), packet_number=1, verbose=True, hex_dump=False,
+            mcp,
+            "decode_packet",
+            filepath=str(pcap),
+            packet_number=1,
+            verbose=True,
+            hex_dump=False,
         )
 
         assert result["isError"] is False
@@ -150,8 +154,10 @@ class TestExportPacketsCsv:
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "export_packets_csv",
-            filepath=str(pcap), separator="|",
+            mcp,
+            "export_packets_csv",
+            filepath=str(pcap),
+            separator="|",
         )
 
         assert result["isError"] is False
@@ -166,15 +172,15 @@ class TestExportPacketsCsv:
 
         pcap = tmp_path / "test.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
-        mock_tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="", stderr="")
-        )
+        mock_tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
 
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "export_packets_csv",
-            filepath=str(pcap), display_filter="http",
+            mcp,
+            "export_packets_csv",
+            filepath=str(pcap),
+            display_filter="http",
         )
 
         assert result["isError"] is False
@@ -190,9 +196,7 @@ class TestExportPacketsCsv:
 
         pcap = tmp_path / "test.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
-        mock_tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="", stderr="")
-        )
+        mock_tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
 
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
@@ -261,14 +265,15 @@ class TestFollowStreamFormat:
         mcp = FastMCP("test")
         register_stream_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "follow_tcp_stream",
-            filepath=str(pcap), stream_index=0, output_format="hex",
+            mcp,
+            "follow_tcp_stream",
+            filepath=str(pcap),
+            stream_index=0,
+            output_format="hex",
         )
 
         assert result["isError"] is False
-        mock_tshark.follow_stream.assert_called_once_with(
-            str(pcap.resolve()), 0, "tcp", "hex"
-        )
+        mock_tshark.follow_stream.assert_called_once_with(str(pcap.resolve()), 0, "tcp", "hex")
 
     @pytest.mark.asyncio
     async def test_follow_tcp_stream_invalid_format(self, mock_tshark, fmt, sec, tmp_path):
@@ -284,8 +289,11 @@ class TestFollowStreamFormat:
         mcp = FastMCP("test")
         register_stream_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "follow_tcp_stream",
-            filepath=str(pcap), stream_index=0, output_format="binary",
+            mcp,
+            "follow_tcp_stream",
+            filepath=str(pcap),
+            stream_index=0,
+            output_format="binary",
         )
 
         assert result["isError"] is True
@@ -311,11 +319,15 @@ class TestConvertPcapFormatEditcap:
         mcp = FastMCP("test")
         register_pcap_tools(mcp, mock_tshark, fmt, sec)
 
-        with patch("netmcp.tools.pcap_tools.shutil.which", return_value="/usr/bin/editcap"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("netmcp.tools.pcap_tools.shutil.which", return_value="/usr/bin/editcap"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             result = await call(
-                mcp, "convert_pcap_format",
-                file_path=str(pcap), output_format="pcapng",
+                mcp,
+                "convert_pcap_format",
+                file_path=str(pcap),
+                output_format="pcapng",
             )
 
         assert result["isError"] is False
@@ -338,8 +350,10 @@ class TestConvertPcapFormatEditcap:
         mcp = FastMCP("test")
         register_pcap_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "convert_pcap_format",
-            file_path=str(pcap), output_format="invalid_format",
+            mcp,
+            "convert_pcap_format",
+            file_path=str(pcap),
+            output_format="invalid_format",
         )
 
         assert result["isError"] is True
@@ -360,11 +374,15 @@ class TestConvertPcapFormatEditcap:
         mcp = FastMCP("test")
         register_pcap_tools(mcp, mock_tshark, fmt, sec)
 
-        with patch("netmcp.tools.pcap_tools.shutil.which", return_value="/usr/bin/editcap"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+        with (
+            patch("netmcp.tools.pcap_tools.shutil.which", return_value="/usr/bin/editcap"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+        ):
             result = await call(
-                mcp, "convert_pcap_format",
-                file_path=str(pcap), output_format="snoop",
+                mcp,
+                "convert_pcap_format",
+                file_path=str(pcap),
+                output_format="snoop",
             )
 
         assert result["isError"] is False
@@ -402,16 +420,17 @@ class TestBpfPresets:
         mcp = FastMCP("test")
         register_capture_tools(mcp, mock_tshark, fmt, sec)
 
-        mock_tshark.capture_live = AsyncMock(
-            return_value=Path("/nonexistent/test.pcap")
-        )
+        mock_tshark.capture_live = AsyncMock(return_value=Path("/nonexistent/test.pcap"))
         mock_tshark.read_pcap = AsyncMock(return_value=[])
 
         # Patch os.unlink so cleanup doesn't fail
         with patch("os.unlink"):
             await call(
-                mcp, "capture_live_packets",
-                interface="eth0", duration=1, bpf_filter="dns",
+                mcp,
+                "capture_live_packets",
+                interface="eth0",
+                duration=1,
+                bpf_filter="dns",
             )
 
         # The capture should have been called with expanded filter

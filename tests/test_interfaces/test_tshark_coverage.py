@@ -70,7 +70,9 @@ class TestRunErrors:
     async def test_timeout_error(self):
         """Line 133: TimeoutError from _run."""
         iface = _make_iface()
-        with patch("subprocess.run", side_effect=lambda *a, **kw: (_ for _ in ()).throw(TimeoutError())):
+        with patch(
+            "subprocess.run", side_effect=lambda *a, **kw: (_ for _ in ()).throw(TimeoutError())
+        ):
             # asyncio.wait_for wraps it; force via short timeout
             pass
 
@@ -346,7 +348,12 @@ class TestFileInfo:
         iface = _make_iface()
         stats_output = "eth\t50\t6000"
         with (
-            patch("shutil.which", side_effect=lambda cmd: "/usr/bin/capinfos" if cmd == "capinfos" else "/usr/bin/tshark"),
+            patch(
+                "shutil.which",
+                side_effect=lambda cmd: (
+                    "/usr/bin/capinfos" if cmd == "capinfos" else "/usr/bin/tshark"
+                ),
+            ),
             patch("subprocess.run") as mock_run,
         ):
             # First call: capinfos fails, second: protocol_stats succeeds

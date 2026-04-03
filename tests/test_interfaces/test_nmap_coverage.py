@@ -158,7 +158,9 @@ class TestNmapScanTypeVariants:
         mock_scanner.scan.return_value = {"scan": {}}
         iface = _make_nmap(scanner=mock_scanner)
         await iface.port_scan("10.0.0.1", scan_type="syn")
-        arguments = mock_scanner.scan.call_args.kwargs.get("arguments") or mock_scanner.scan.call_args[1].get("arguments", "")
+        arguments = mock_scanner.scan.call_args.kwargs.get(
+            "arguments"
+        ) or mock_scanner.scan.call_args[1].get("arguments", "")
         assert "-sS" in arguments
 
     @pytest.mark.asyncio
@@ -168,7 +170,9 @@ class TestNmapScanTypeVariants:
         mock_scanner.scan.return_value = {"scan": {}}
         iface = _make_nmap(scanner=mock_scanner)
         await iface.port_scan("10.0.0.1", scan_type="udp")
-        arguments = mock_scanner.scan.call_args.kwargs.get("arguments") or mock_scanner.scan.call_args[1].get("arguments", "")
+        arguments = mock_scanner.scan.call_args.kwargs.get(
+            "arguments"
+        ) or mock_scanner.scan.call_args[1].get("arguments", "")
         assert "-sU" in arguments
 
     @pytest.mark.asyncio
@@ -178,7 +182,9 @@ class TestNmapScanTypeVariants:
         mock_scanner.scan.return_value = {"scan": {}}
         iface = _make_nmap(scanner=mock_scanner)
         await iface.port_scan("10.0.0.1", scan_type="unknown")
-        arguments = mock_scanner.scan.call_args.kwargs.get("arguments") or mock_scanner.scan.call_args[1].get("arguments", "")
+        arguments = mock_scanner.scan.call_args.kwargs.get(
+            "arguments"
+        ) or mock_scanner.scan.call_args[1].get("arguments", "")
         assert "-sT" in arguments
 
 

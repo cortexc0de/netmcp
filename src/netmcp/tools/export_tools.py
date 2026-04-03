@@ -67,14 +67,16 @@ def register_export_tools(
             if display_filter:
                 sec.validate_display_filter(display_filter)
             packets = await tshark.export_json(str(validated_path), display_filter, max_packets)
-            return fmt.truncate_output(fmt.format_success(
-                {
-                    "filepath": str(validated_path),
-                    "packet_count": len(packets),
-                    "packets": packets[:500],
-                },
-                title="JSON Export",
-            ))
+            return fmt.truncate_output(
+                fmt.format_success(
+                    {
+                        "filepath": str(validated_path),
+                        "packet_count": len(packets),
+                        "packets": packets[:500],
+                    },
+                    title="JSON Export",
+                )
+            )
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
@@ -122,11 +124,16 @@ def register_export_tools(
             args = ["-r", str(validated_path), "-T", "fields"]
             for f in field_list:
                 args.extend(["-e", f])
-            args.extend([
-                "-E", f"separator={separator}",
-                "-E", "header=y",
-                "-E", "quote=d",
-            ])
+            args.extend(
+                [
+                    "-E",
+                    f"separator={separator}",
+                    "-E",
+                    "header=y",
+                    "-E",
+                    "quote=d",
+                ]
+            )
             if display_filter:
                 args.extend(["-Y", display_filter])
 
@@ -136,20 +143,25 @@ def register_export_tools(
 
             csv_text = result.stdout
 
-            sec.audit_log("export_packets_csv", {
-                "filepath": str(validated_path),
-                "fields": field_list,
-                "display_filter": display_filter or "(none)",
-            })
-
-            return fmt.truncate_output(fmt.format_success(
+            sec.audit_log(
+                "export_packets_csv",
                 {
                     "filepath": str(validated_path),
-                    "csv": csv_text[:50000],
                     "fields": field_list,
+                    "display_filter": display_filter or "(none)",
                 },
-                title="CSV Export",
-            ))
+            )
+
+            return fmt.truncate_output(
+                fmt.format_success(
+                    {
+                        "filepath": str(validated_path),
+                        "csv": csv_text[:50000],
+                        "fields": field_list,
+                    },
+                    title="CSV Export",
+                )
+            )
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
@@ -214,11 +226,14 @@ def register_export_tools(
             for line in lines:
                 table_lines.append(line)
 
-            sec.audit_log("get_packet_summary", {
-                "filepath": str(validated_path),
-                "count": count,
-                "display_filter": display_filter or "(none)",
-            })
+            sec.audit_log(
+                "get_packet_summary",
+                {
+                    "filepath": str(validated_path),
+                    "count": count,
+                    "display_filter": display_filter or "(none)",
+                },
+            )
 
             output = {
                 "filepath": str(validated_path),
@@ -258,9 +273,7 @@ def register_export_tools(
 
             output_path = str(validated_path.with_suffix(f".{output_format}"))
 
-            result = await tshark.convert_format(
-                str(validated_path), output_path, timeout=60.0
-            )
+            result = await tshark.convert_format(str(validated_path), output_path, timeout=60.0)
             if result.returncode != 0:
                 raise RuntimeError(f"Format conversion failed: {result.stderr}")
 

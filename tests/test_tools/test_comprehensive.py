@@ -32,32 +32,54 @@ def mock_tshark():
         tshark = TsharkInterface()
         tshark.list_interfaces = AsyncMock(return_value=["eth0", "lo"])
         tshark.capture_live = AsyncMock(return_value=Path("/tmp/test.pcap"))
-        tshark.read_pcap = AsyncMock(return_value=[
-            {"_source": {"layers": {
-                "ip.src": ["10.0.0.1"], "ip.dst": ["10.0.0.2"],
-                "frame.number": ["1"], "frame.protocols": ["eth:ethertype:ip:tcp:http"],
-                "frame.len": ["100"],
-            }}}
-        ])
-        tshark.protocol_stats = AsyncMock(return_value={
-            "tcp": {"frames": 100, "bytes": 12000},
-            "udp": {"frames": 50, "bytes": 6000},
-        })
+        tshark.read_pcap = AsyncMock(
+            return_value=[
+                {
+                    "_source": {
+                        "layers": {
+                            "ip.src": ["10.0.0.1"],
+                            "ip.dst": ["10.0.0.2"],
+                            "frame.number": ["1"],
+                            "frame.protocols": ["eth:ethertype:ip:tcp:http"],
+                            "frame.len": ["100"],
+                        }
+                    }
+                }
+            ]
+        )
+        tshark.protocol_stats = AsyncMock(
+            return_value={
+                "tcp": {"frames": 100, "bytes": 12000},
+                "udp": {"frames": 50, "bytes": 6000},
+            }
+        )
         tshark.follow_stream = AsyncMock(return_value="GET / HTTP/1.1\r\nHost: example.com\r\n")
-        tshark.list_streams = AsyncMock(return_value=[
-            {"endpoint_a": "192.168.1.1:443", "endpoint_b": "10.0.0.1:54321"}
-        ])
-        tshark.export_fields = AsyncMock(return_value=[
-            {"http.request.method": "GET", "http.host": "example.com",
-             "http.request.uri": "/api", "http.response.code": "200",
-             "http.user_agent": "Mozilla/5.0",
-             "http.authorization": "Bearer eyJ...", "http.cookie": "session=abc",
-             "http.x_forwarded_for": "", "frame.number": "1"},
-        ])
+        tshark.list_streams = AsyncMock(
+            return_value=[{"endpoint_a": "192.168.1.1:443", "endpoint_b": "10.0.0.1:54321"}]
+        )
+        tshark.export_fields = AsyncMock(
+            return_value=[
+                {
+                    "http.request.method": "GET",
+                    "http.host": "example.com",
+                    "http.request.uri": "/api",
+                    "http.response.code": "200",
+                    "http.user_agent": "Mozilla/5.0",
+                    "http.authorization": "Bearer eyJ...",
+                    "http.cookie": "session=abc",
+                    "http.x_forwarded_for": "",
+                    "frame.number": "1",
+                },
+            ]
+        )
         tshark.export_json = AsyncMock(return_value=[{"_source": {"layers": {}}}])
-        tshark.file_info = AsyncMock(return_value={"filepath": "/tmp/test.pcap", "total_frames": "150"})
+        tshark.file_info = AsyncMock(
+            return_value={"filepath": "/tmp/test.pcap", "total_frames": "150"}
+        )
         tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
-        tshark.convert_format = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
+        tshark.convert_format = AsyncMock(
+            return_value=MagicMock(returncode=0, stdout="", stderr="")
+        )
         yield tshark
 
 
@@ -79,13 +101,23 @@ class TestCredentialExtraction:
         pcap.write_bytes(b"fake pcap" * 100)
 
         # base64("admin:password123") = "YWRtaW46cGFzc3dvcmQxMjM="
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [{"http.authbasic": "YWRtaW46cGFzc3dvcmQxMjM=", "ftp.request.command": "",
-              "ftp.request.arg": "", "telnet.data": "", "frame.number": "1"}],
-            [],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [
+                    {
+                        "http.authbasic": "YWRtaW46cGFzc3dvcmQxMjM=",
+                        "ftp.request.command": "",
+                        "ftp.request.arg": "",
+                        "telnet.data": "",
+                        "frame.number": "1",
+                    }
+                ],
+                [],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -100,13 +132,23 @@ class TestCredentialExtraction:
         pcap = tmp_path / "bad_auth.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [{"http.authbasic": "not-valid-base64!!!", "ftp.request.command": "",
-              "ftp.request.arg": "", "telnet.data": "", "frame.number": "1"}],
-            [],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [
+                    {
+                        "http.authbasic": "not-valid-base64!!!",
+                        "ftp.request.command": "",
+                        "ftp.request.arg": "",
+                        "telnet.data": "",
+                        "frame.number": "1",
+                    }
+                ],
+                [],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -118,17 +160,30 @@ class TestCredentialExtraction:
         pcap = tmp_path / "ftp.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [
-                {"ftp.request.command": "USER", "ftp.request.arg": "admin",
-                 "http.authbasic": "", "telnet.data": "", "frame.number": "1"},
-                {"ftp.request.command": "PASS", "ftp.request.arg": "secret123",
-                 "http.authbasic": "", "telnet.data": "", "frame.number": "2"},
-            ],
-            [],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [
+                    {
+                        "ftp.request.command": "USER",
+                        "ftp.request.arg": "admin",
+                        "http.authbasic": "",
+                        "telnet.data": "",
+                        "frame.number": "1",
+                    },
+                    {
+                        "ftp.request.command": "PASS",
+                        "ftp.request.arg": "secret123",
+                        "http.authbasic": "",
+                        "telnet.data": "",
+                        "frame.number": "2",
+                    },
+                ],
+                [],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -143,15 +198,23 @@ class TestCredentialExtraction:
         pcap = tmp_path / "ftp_nopass.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [
-                {"ftp.request.command": "USER", "ftp.request.arg": "anonymous",
-                 "http.authbasic": "", "telnet.data": "", "frame.number": "1"},
-            ],
-            [],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [
+                    {
+                        "ftp.request.command": "USER",
+                        "ftp.request.arg": "anonymous",
+                        "http.authbasic": "",
+                        "telnet.data": "",
+                        "frame.number": "1",
+                    },
+                ],
+                [],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -165,21 +228,44 @@ class TestCredentialExtraction:
         pcap = tmp_path / "telnet.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [
-                {"telnet.data": "login: ", "ftp.request.command": "",
-                 "ftp.request.arg": "", "http.authbasic": "", "frame.number": "1"},
-                {"telnet.data": "admin", "ftp.request.command": "",
-                 "ftp.request.arg": "", "http.authbasic": "", "frame.number": "2"},
-                {"telnet.data": "password: ", "ftp.request.command": "",
-                 "ftp.request.arg": "", "http.authbasic": "", "frame.number": "3"},
-                {"telnet.data": "secret", "ftp.request.command": "",
-                 "ftp.request.arg": "", "http.authbasic": "", "frame.number": "4"},
-            ],
-            [],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [
+                    {
+                        "telnet.data": "login: ",
+                        "ftp.request.command": "",
+                        "ftp.request.arg": "",
+                        "http.authbasic": "",
+                        "frame.number": "1",
+                    },
+                    {
+                        "telnet.data": "admin",
+                        "ftp.request.command": "",
+                        "ftp.request.arg": "",
+                        "http.authbasic": "",
+                        "frame.number": "2",
+                    },
+                    {
+                        "telnet.data": "password: ",
+                        "ftp.request.command": "",
+                        "ftp.request.arg": "",
+                        "http.authbasic": "",
+                        "frame.number": "3",
+                    },
+                    {
+                        "telnet.data": "secret",
+                        "ftp.request.command": "",
+                        "ftp.request.arg": "",
+                        "http.authbasic": "",
+                        "frame.number": "4",
+                    },
+                ],
+                [],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -193,14 +279,24 @@ class TestCredentialExtraction:
         pcap = tmp_path / "krb.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],
-            [{"kerberos.CNameString": "jdoe", "kerberos.realm": "CORP.LOCAL",
-              "kerberos.cipher": "abc123cipher", "kerberos.type": "",
-              "kerberos.msg_type": "11", "frame.number": "5"}],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],
+                [
+                    {
+                        "kerberos.CNameString": "jdoe",
+                        "kerberos.realm": "CORP.LOCAL",
+                        "kerberos.cipher": "abc123cipher",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "11",
+                        "frame.number": "5",
+                    }
+                ],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -216,14 +312,24 @@ class TestCredentialExtraction:
         pcap = tmp_path / "krb_req.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],
-            [{"kerberos.CNameString": "admin", "kerberos.realm": "DOMAIN.COM",
-              "kerberos.cipher": "deadbeef", "kerberos.type": "",
-              "kerberos.msg_type": "10", "frame.number": "3"}],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],
+                [
+                    {
+                        "kerberos.CNameString": "admin",
+                        "kerberos.realm": "DOMAIN.COM",
+                        "kerberos.cipher": "deadbeef",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "10",
+                        "frame.number": "3",
+                    }
+                ],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -237,14 +343,24 @@ class TestCredentialExtraction:
         pcap = tmp_path / "krb_tgs.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],
-            [{"kerberos.CNameString": "svc", "kerberos.realm": "REALM",
-              "kerberos.cipher": "cafebabe", "kerberos.type": "",
-              "kerberos.msg_type": "30", "frame.number": "7"}],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],
+                [
+                    {
+                        "kerberos.CNameString": "svc",
+                        "kerberos.realm": "REALM",
+                        "kerberos.cipher": "cafebabe",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "30",
+                        "frame.number": "7",
+                    }
+                ],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -258,14 +374,24 @@ class TestCredentialExtraction:
         pcap = tmp_path / "krb_unk.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],
-            [{"kerberos.CNameString": "user", "kerberos.realm": "X",
-              "kerberos.cipher": "xyz", "kerberos.type": "",
-              "kerberos.msg_type": "99", "frame.number": "1"}],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],
+                [
+                    {
+                        "kerberos.CNameString": "user",
+                        "kerberos.realm": "X",
+                        "kerberos.cipher": "xyz",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "99",
+                        "frame.number": "1",
+                    }
+                ],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -279,14 +405,24 @@ class TestCredentialExtraction:
         pcap = tmp_path / "krb_nocipher.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],
-            [{"kerberos.CNameString": "user", "kerberos.realm": "X",
-              "kerberos.cipher": "", "kerberos.type": "",
-              "kerberos.msg_type": "11", "frame.number": "1"}],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],
+                [
+                    {
+                        "kerberos.CNameString": "user",
+                        "kerberos.realm": "X",
+                        "kerberos.cipher": "",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "11",
+                        "frame.number": "1",
+                    }
+                ],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -300,13 +436,23 @@ class TestCredentialExtraction:
         pcap = tmp_path / "empty.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [{"http.authbasic": "", "ftp.request.command": "",
-              "ftp.request.arg": "", "telnet.data": "", "frame.number": "1"}],
-            [],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [
+                    {
+                        "http.authbasic": "",
+                        "ftp.request.command": "",
+                        "ftp.request.arg": "",
+                        "telnet.data": "",
+                        "frame.number": "1",
+                    }
+                ],
+                [],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath=str(pcap))
@@ -319,6 +465,7 @@ class TestCredentialExtraction:
     async def test_credential_extraction_error(self, mock_tshark, fmt, sec, tmp_path):
         """Error during extraction returns formatted error."""
         from netmcp.tools.credentials import register_credential_tools
+
         mcp = FastMCP("test")
         register_credential_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "extract_credentials", filepath="/nonexistent/file.pcap")
@@ -408,13 +555,16 @@ class TestAuditLogging:
 
     def test_audit_log_filters_secrets(self, sec, caplog):
         with caplog.at_level(logging.INFO, logger="netmcp.security"):
-            sec.audit_log("test_op", {
-                "target": "10.0.0.1",
-                "password": "secret123",
-                "token": "abc",
-                "key": "apikey",
-                "secret": "shh",
-            })
+            sec.audit_log(
+                "test_op",
+                {
+                    "target": "10.0.0.1",
+                    "password": "secret123",
+                    "token": "abc",
+                    "key": "apikey",
+                    "secret": "shh",
+                },
+            )
         assert "secret123" not in caplog.text
         assert "abc" not in caplog.text
         assert "apikey" not in caplog.text
@@ -491,12 +641,15 @@ class TestErrorCodes:
 
     def test_format_error_maps_correctly(self, fmt):
         assert "[NETMCP_002]" in fmt.format_error(ValueError("bad"))["content"][0]["text"]
-        assert "[NETMCP_004]" in fmt.format_error(FileNotFoundError("missing"))["content"][0]["text"]
+        assert (
+            "[NETMCP_004]" in fmt.format_error(FileNotFoundError("missing"))["content"][0]["text"]
+        )
         assert "[NETMCP_005]" in fmt.format_error(TimeoutError("slow"))["content"][0]["text"]
         assert "[NETMCP_007]" in fmt.format_error(PermissionError("denied"))["content"][0]["text"]
-        assert "[NETMCP_003]" in fmt.format_error(
-            subprocess.CalledProcessError(1, "cmd")
-        )["content"][0]["text"]
+        assert (
+            "[NETMCP_003]"
+            in fmt.format_error(subprocess.CalledProcessError(1, "cmd"))["content"][0]["text"]
+        )
 
     def test_format_error_unknown_exception(self, fmt):
         result = fmt.format_error(Exception("generic"))
@@ -515,11 +668,13 @@ class TestResources:
 
     def test_resources_registered(self):
         from netmcp.server import create_server
+
         server = create_server()
         assert hasattr(server, "_resource_manager")
 
     def test_register_resources(self, mock_tshark, fmt):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = False
         mcp = FastMCP("test")
@@ -527,6 +682,7 @@ class TestResources:
 
     def test_get_interfaces_resource(self, mock_tshark, fmt):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = True
         mcp = FastMCP("test")
@@ -548,6 +704,7 @@ class TestResources:
 
     def test_get_interfaces_tshark_not_found(self, mock_tshark, fmt):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = False
         mcp = FastMCP("test")
@@ -563,6 +720,7 @@ class TestResources:
 
     def test_get_interfaces_timeout(self, mock_tshark, fmt):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = False
         mcp = FastMCP("test")
@@ -578,6 +736,7 @@ class TestResources:
 
     def test_get_interfaces_returncode_error(self, mock_tshark, fmt):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = False
         mcp = FastMCP("test")
@@ -594,6 +753,7 @@ class TestResources:
 
     def test_get_captures_resource(self, mock_tshark, fmt, tmp_path):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = False
         mcp = FastMCP("test")
@@ -608,6 +768,7 @@ class TestResources:
 
     def test_get_system_info_resource(self, mock_tshark, fmt):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = True
         mcp = FastMCP("test")
@@ -623,6 +784,7 @@ class TestResources:
 
     def test_get_interfaces_generic_exception(self, mock_tshark, fmt):
         from netmcp.resources import register_resources
+
         nmap = MagicMock()
         nmap.available = False
         mcp = FastMCP("test")
@@ -645,6 +807,7 @@ class TestNmapToolBranches:
 
     def _make_nmap_mcp(self, fmt, sec, available=True):
         from netmcp.tools.nmap_scan import register_nmap_tools
+
         mock_nmap = MagicMock()
         mock_nmap.available = available
         mock_nmap.port_scan = AsyncMock(return_value={"scan": {}})
@@ -660,7 +823,9 @@ class TestNmapToolBranches:
     @pytest.mark.asyncio
     async def test_port_scan_not_available(self, fmt, sec):
         mcp = self._make_nmap_mcp(fmt, sec, available=False)
-        result = await call(mcp, "nmap_port_scan", target="10.0.0.1", ports="80", scan_type="connect")
+        result = await call(
+            mcp, "nmap_port_scan", target="10.0.0.1", ports="80", scan_type="connect"
+        )
         assert result["isError"] is True
 
     @pytest.mark.asyncio
@@ -767,7 +932,9 @@ class TestNmapToolBranches:
     @pytest.mark.asyncio
     async def test_port_scan_with_ports_validation(self, fmt, sec):
         mcp = self._make_nmap_mcp(fmt, sec)
-        result = await call(mcp, "nmap_port_scan", target="10.0.0.1", ports="1-1024", scan_type="connect")
+        result = await call(
+            mcp, "nmap_port_scan", target="10.0.0.1", ports="1-1024", scan_type="connect"
+        )
         assert result["isError"] is False
 
     @pytest.mark.asyncio
@@ -808,6 +975,7 @@ class TestTsharkFieldValidation:
         pcap.write_bytes(b"fake pcap" * 100)
 
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "export_packets_csv", filepath=str(pcap), fields="$(whoami)")
@@ -823,6 +991,7 @@ class TestTsharkFieldValidation:
         )
 
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "export_packets_csv", filepath=str(pcap), fields="ip.src,ip.dst")
@@ -920,6 +1089,7 @@ class TestConvertFormat:
         pcap.write_bytes(b"fake pcap" * 100)
 
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "convert_pcap_format", filepath=str(pcap), output_format="pcapng")
@@ -931,6 +1101,7 @@ class TestConvertFormat:
         pcap.write_bytes(b"fake pcap" * 100)
 
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "convert_pcap_format", filepath=str(pcap), output_format="exe")
@@ -945,6 +1116,7 @@ class TestConvertFormat:
         )
 
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "convert_pcap_format", filepath=str(pcap), output_format="pcapng")
@@ -1008,11 +1180,15 @@ class TestAnalysisBranches:
         mock_tshark.capture_live = AsyncMock(return_value=pcap)
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "capture_targeted_traffic",
-            interface="eth0", target_host="10.0.0.1", duration=5,
+            mcp,
+            "capture_targeted_traffic",
+            interface="eth0",
+            target_host="10.0.0.1",
+            duration=5,
         )
         assert result["isError"] is False
 
@@ -1023,26 +1199,36 @@ class TestAnalysisBranches:
         mock_tshark.capture_live = AsyncMock(return_value=pcap)
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "capture_targeted_traffic",
-            interface="eth0", target_port=443, duration=5,
+            mcp,
+            "capture_targeted_traffic",
+            interface="eth0",
+            target_port=443,
+            duration=5,
         )
         assert result["isError"] is False
 
     @pytest.mark.asyncio
-    async def test_capture_targeted_traffic_with_protocol_tcp(self, mock_tshark, fmt, sec, tmp_path):
+    async def test_capture_targeted_traffic_with_protocol_tcp(
+        self, mock_tshark, fmt, sec, tmp_path
+    ):
         pcap = tmp_path / "proto.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
         mock_tshark.capture_live = AsyncMock(return_value=pcap)
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "capture_targeted_traffic",
-            interface="eth0", protocol="tcp", duration=5,
+            mcp,
+            "capture_targeted_traffic",
+            interface="eth0",
+            protocol="tcp",
+            duration=5,
         )
         assert result["isError"] is False
 
@@ -1054,11 +1240,15 @@ class TestAnalysisBranches:
         mock_tshark.capture_live = AsyncMock(return_value=pcap)
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "capture_targeted_traffic",
-            interface="eth0", protocol="http", duration=5,
+            mcp,
+            "capture_targeted_traffic",
+            interface="eth0",
+            protocol="http",
+            duration=5,
         )
         assert result["isError"] is False
 
@@ -1070,22 +1260,30 @@ class TestAnalysisBranches:
         mock_tshark.capture_live = AsyncMock(return_value=pcap)
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "capture_targeted_traffic",
-            interface="eth0", protocol="https", duration=5,
+            mcp,
+            "capture_targeted_traffic",
+            interface="eth0",
+            protocol="https",
+            duration=5,
         )
         assert result["isError"] is False
 
     @pytest.mark.asyncio
     async def test_capture_targeted_traffic_invalid_protocol(self, mock_tshark, fmt, sec):
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "capture_targeted_traffic",
-            interface="eth0", protocol="invalid_proto", duration=5,
+            mcp,
+            "capture_targeted_traffic",
+            interface="eth0",
+            protocol="invalid_proto",
+            duration=5,
         )
         assert result["isError"] is True
 
@@ -1097,11 +1295,17 @@ class TestAnalysisBranches:
         mock_tshark.capture_live = AsyncMock(return_value=pcap)
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "capture_targeted_traffic",
-            interface="eth0", target_host="10.0.0.1", target_port=80, protocol="tcp", duration=5,
+            mcp,
+            "capture_targeted_traffic",
+            interface="eth0",
+            target_host="10.0.0.1",
+            target_port=80,
+            protocol="tcp",
+            duration=5,
         )
         assert result["isError"] is False
 
@@ -1111,12 +1315,15 @@ class TestAnalysisBranches:
         pcap = tmp_path / "live.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
         mock_tshark.capture_live = AsyncMock(return_value=pcap)
-        mock_tshark.protocol_stats = AsyncMock(return_value={
-            "http": {"frames": 50, "bytes": 5000},
-            "dns": {"frames": 30, "bytes": 3000},
-        })
+        mock_tshark.protocol_stats = AsyncMock(
+            return_value={
+                "http": {"frames": 50, "bytes": 5000},
+                "dns": {"frames": 30, "bytes": 3000},
+            }
+        )
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "detect_network_protocols", interface="eth0", duration=5)
@@ -1126,6 +1333,7 @@ class TestAnalysisBranches:
     async def test_detect_protocols_no_input(self, mock_tshark, fmt, sec):
         """Neither filepath nor interface returns error."""
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "detect_network_protocols")
@@ -1136,13 +1344,16 @@ class TestAnalysisBranches:
         """Protocol insights include detected protocol names."""
         pcap = tmp_path / "insights.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
-        mock_tshark.protocol_stats = AsyncMock(return_value={
-            "http": {"frames": 50, "bytes": 5000},
-            "tls": {"frames": 80, "bytes": 8000},
-            "dns": {"frames": 30, "bytes": 3000},
-        })
+        mock_tshark.protocol_stats = AsyncMock(
+            return_value={
+                "http": {"frames": 50, "bytes": 5000},
+                "tls": {"frames": 80, "bytes": 8000},
+                "dns": {"frames": 30, "bytes": 3000},
+            }
+        )
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "detect_network_protocols", filepath=str(pcap))
@@ -1151,21 +1362,32 @@ class TestAnalysisBranches:
         assert "http" in text.lower()
 
     @pytest.mark.asyncio
-    async def test_analyze_http_headers_with_auth_and_cookies(self, mock_tshark, fmt, sec, tmp_path):
+    async def test_analyze_http_headers_with_auth_and_cookies(
+        self, mock_tshark, fmt, sec, tmp_path
+    ):
         """HTTP headers with Bearer auth and cookies."""
         pcap = tmp_path / "headers.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
-        mock_tshark.export_fields = AsyncMock(return_value=[
-            {"http.request.method": "GET", "http.host": "api.example.com",
-             "http.request.uri": "/users", "http.response.code": "",
-             "http.authorization": "Bearer eyJhbGciOiJSUzI1NiJ9.long.token",
-             "http.cookie": "session=abc123def; csrftoken=xyz789",
-             "http.set_cookie": "", "http.user_agent": "curl/7.68.0",
-             "http.referer": "", "http.x_forwarded_for": "192.168.1.100",
-             "frame.number": "5"},
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            return_value=[
+                {
+                    "http.request.method": "GET",
+                    "http.host": "api.example.com",
+                    "http.request.uri": "/users",
+                    "http.response.code": "",
+                    "http.authorization": "Bearer eyJhbGciOiJSUzI1NiJ9.long.token",
+                    "http.cookie": "session=abc123def; csrftoken=xyz789",
+                    "http.set_cookie": "",
+                    "http.user_agent": "curl/7.68.0",
+                    "http.referer": "",
+                    "http.x_forwarded_for": "192.168.1.100",
+                    "frame.number": "5",
+                },
+            ]
+        )
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "analyze_http_headers", filepath=str(pcap), include_cookies=True)
@@ -1180,17 +1402,26 @@ class TestAnalysisBranches:
         """HTTP headers with include_cookies=False."""
         pcap = tmp_path / "nocookies.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
-        mock_tshark.export_fields = AsyncMock(return_value=[
-            {"http.request.method": "POST", "http.host": "example.com",
-             "http.request.uri": "/login", "http.response.code": "302",
-             "http.authorization": "Basic dXNlcjpwYXNz",
-             "http.cookie": "token=shouldnotappear",
-             "http.set_cookie": "", "http.user_agent": "Mozilla/5.0",
-             "http.referer": "", "http.x_forwarded_for": "",
-             "frame.number": "10"},
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            return_value=[
+                {
+                    "http.request.method": "POST",
+                    "http.host": "example.com",
+                    "http.request.uri": "/login",
+                    "http.response.code": "302",
+                    "http.authorization": "Basic dXNlcjpwYXNz",
+                    "http.cookie": "token=shouldnotappear",
+                    "http.set_cookie": "",
+                    "http.user_agent": "Mozilla/5.0",
+                    "http.referer": "",
+                    "http.x_forwarded_for": "",
+                    "frame.number": "10",
+                },
+            ]
+        )
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "analyze_http_headers", filepath=str(pcap), include_cookies=False)
@@ -1202,6 +1433,7 @@ class TestAnalysisBranches:
     async def test_analyze_pcap_error_handling(self, mock_tshark, fmt, sec):
         """Non-existent file returns error."""
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "analyze_pcap_file", filepath="/nonexistent/file.pcap")
@@ -1211,6 +1443,7 @@ class TestAnalysisBranches:
     async def test_get_protocol_statistics_error(self, mock_tshark, fmt, sec):
         """Error in protocol stats returns formatted error."""
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "get_protocol_statistics", filepath="/bad.pcap")
@@ -1219,6 +1452,7 @@ class TestAnalysisBranches:
     @pytest.mark.asyncio
     async def test_get_capture_file_info_error(self, mock_tshark, fmt, sec):
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "get_capture_file_info", filepath="/missing.pcap")
@@ -1229,22 +1463,41 @@ class TestAnalysisBranches:
         """HTTP traffic analysis with methods, hosts, status codes."""
         pcap = tmp_path / "http_data.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
-        mock_tshark.export_fields = AsyncMock(return_value=[
-            {"http.request.method": "GET", "http.host": "example.com",
-             "http.request.uri": "/page1", "http.response.code": "",
-             "http.user_agent": "Mozilla/5.0"},
-            {"http.request.method": "POST", "http.host": "example.com",
-             "http.request.uri": "/api", "http.response.code": "",
-             "http.user_agent": "curl/7.68.0"},
-            {"http.request.method": "", "http.host": "",
-             "http.request.uri": "", "http.response.code": "200",
-             "http.user_agent": ""},
-            {"http.request.method": "", "http.host": "",
-             "http.request.uri": "", "http.response.code": "404",
-             "http.user_agent": ""},
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            return_value=[
+                {
+                    "http.request.method": "GET",
+                    "http.host": "example.com",
+                    "http.request.uri": "/page1",
+                    "http.response.code": "",
+                    "http.user_agent": "Mozilla/5.0",
+                },
+                {
+                    "http.request.method": "POST",
+                    "http.host": "example.com",
+                    "http.request.uri": "/api",
+                    "http.response.code": "",
+                    "http.user_agent": "curl/7.68.0",
+                },
+                {
+                    "http.request.method": "",
+                    "http.host": "",
+                    "http.request.uri": "",
+                    "http.response.code": "200",
+                    "http.user_agent": "",
+                },
+                {
+                    "http.request.method": "",
+                    "http.host": "",
+                    "http.request.uri": "",
+                    "http.response.code": "404",
+                    "http.user_agent": "",
+                },
+            ]
+        )
 
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "analyze_http_traffic", filepath=str(pcap))
@@ -1257,6 +1510,7 @@ class TestAnalysisBranches:
     async def test_geoip_no_ips(self, mock_tshark, fmt, sec):
         """No IPs provided returns error."""
         from netmcp.tools.analysis import register_analysis_tools
+
         mcp = FastMCP("test")
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "geoip_lookup", ip_addresses="")
@@ -1272,6 +1526,7 @@ class TestExportBranches:
     @pytest.mark.asyncio
     async def test_export_json_error(self, mock_tshark, fmt, sec):
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "export_packets_json", filepath="/nonexistent.pcap")
@@ -1280,6 +1535,7 @@ class TestExportBranches:
     @pytest.mark.asyncio
     async def test_export_csv_error(self, mock_tshark, fmt, sec):
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "export_packets_csv", filepath="/nonexistent.pcap")
@@ -1293,6 +1549,7 @@ class TestExportBranches:
         mock_tshark.export_fields = AsyncMock(return_value=[])
 
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "export_packets_csv", filepath=str(pcap))
@@ -1304,11 +1561,15 @@ class TestExportBranches:
         pcap.write_bytes(b"fake pcap" * 100)
 
         from netmcp.tools.export_tools import register_export_tools
+
         mcp = FastMCP("test")
         register_export_tools(mcp, mock_tshark, fmt, sec)
         result = await call(
-            mcp, "export_packets_json",
-            filepath=str(pcap), display_filter="http", max_packets=100,
+            mcp,
+            "export_packets_json",
+            filepath=str(pcap),
+            display_filter="http",
+            max_packets=100,
         )
         assert result["isError"] is False
 
@@ -1322,6 +1583,7 @@ class TestStreamBranches:
     @pytest.mark.asyncio
     async def test_follow_tcp_error(self, mock_tshark, fmt, sec):
         from netmcp.tools.streams import register_stream_tools
+
         mcp = FastMCP("test")
         register_stream_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "follow_tcp_stream", filepath="/bad.pcap", stream_index=0)
@@ -1330,6 +1592,7 @@ class TestStreamBranches:
     @pytest.mark.asyncio
     async def test_follow_udp_error(self, mock_tshark, fmt, sec):
         from netmcp.tools.streams import register_stream_tools
+
         mcp = FastMCP("test")
         register_stream_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "follow_udp_stream", filepath="/bad.pcap", stream_index=0)
@@ -1338,6 +1601,7 @@ class TestStreamBranches:
     @pytest.mark.asyncio
     async def test_list_tcp_streams_error(self, mock_tshark, fmt, sec):
         from netmcp.tools.streams import register_stream_tools
+
         mcp = FastMCP("test")
         register_stream_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "list_tcp_streams", filepath="/bad.pcap")

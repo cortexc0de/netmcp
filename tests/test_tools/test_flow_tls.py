@@ -32,9 +32,7 @@ def mock_tshark():
         from netmcp.interfaces.tshark import TsharkInterface
 
         tshark = TsharkInterface()
-        tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="", stderr="")
-        )
+        tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
         tshark.export_fields = AsyncMock(return_value=[])
         tshark.list_streams = AsyncMock(return_value=[])
         yield tshark
@@ -270,9 +268,7 @@ class TestVisualizeNetworkFlows:
                 tool_fn = t.fn
                 break
 
-        result = await tool_fn(
-            filepath=str(sample_pcap), output_format="mermaid"
-        )
+        result = await tool_fn(filepath=str(sample_pcap), output_format="mermaid")
         assert result["isError"] is False
         text = result["content"][0]["text"]
         assert "sequenceDiagram" in text
@@ -352,21 +348,20 @@ class TestVisualizeNetworkFlows:
                 tool_fn = t.fn
                 break
 
-        result = await tool_fn(
-            filepath=str(sample_pcap), flow_type="udp"
-        )
+        result = await tool_fn(filepath=str(sample_pcap), flow_type="udp")
         assert result["isError"] is False
         # Verify export_fields was called with udp filter
         mock_tshark.export_fields.assert_called_once()
         call_args = mock_tshark.export_fields.call_args
-        assert call_args.kwargs.get("display_filter") == "udp" or call_args[1].get("display_filter") == "udp"
+        assert (
+            call_args.kwargs.get("display_filter") == "udp"
+            or call_args[1].get("display_filter") == "udp"
+        )
 
 
 class TestDecryptTlsTraffic:
     @pytest.mark.asyncio
-    async def test_decrypt_with_keylog(
-        self, mock_tshark, fmt, sec, sample_pcap, sample_keylog
-    ):
+    async def test_decrypt_with_keylog(self, mock_tshark, fmt, sec, sample_pcap, sample_keylog):
         # Mock tshark returning decrypted HTTP data
         mock_tshark._run = AsyncMock(
             return_value=MagicMock(
@@ -382,9 +377,7 @@ class TestDecryptTlsTraffic:
                 tool_fn = t.fn
                 break
 
-        result = await tool_fn(
-            filepath=str(sample_pcap), keylog_file=str(sample_keylog)
-        )
+        result = await tool_fn(filepath=str(sample_pcap), keylog_file=str(sample_keylog))
         assert result["isError"] is False
         text = result["content"][0]["text"]
         assert "http_requests" in text
@@ -517,9 +510,7 @@ class TestDecryptTlsTraffic:
         assert "Invalid output extension" in result["content"][0]["text"]
 
     @pytest.mark.asyncio
-    async def test_decrypt_path_traversal_keylog(
-        self, mock_tshark, fmt, sec, sample_pcap
-    ):
+    async def test_decrypt_path_traversal_keylog(self, mock_tshark, fmt, sec, sample_pcap):
         mcp = _register_tools(mock_tshark, fmt, sec)
         tool_fn = None
         for t in mcp._tool_manager._tools.values():

@@ -28,9 +28,7 @@ def mock_tshark():
         tshark = TsharkInterface()
         tshark.read_pcap = AsyncMock(return_value=[])
         tshark.protocol_stats = AsyncMock(return_value={})
-        tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="", stderr="")
-        )
+        tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
         yield tshark
 
 
@@ -60,11 +58,16 @@ class TestExtractObjects:
         # Pre-create a fake extracted file
         (out_dir / "image.png").write_bytes(b"\x89PNG" + b"\x00" * 100)
 
-        with patch("netmcp.tools.advanced.shutil.which", return_value="/usr/bin/tshark"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        with (
+            patch("netmcp.tools.advanced.shutil.which", return_value="/usr/bin/tshark"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec,
+        ):
             result = await call(
-                mcp, "extract_objects",
-                file_path=str(pcap), protocol="http", output_dir=str(out_dir),
+                mcp,
+                "extract_objects",
+                file_path=str(pcap),
+                protocol="http",
+                output_dir=str(out_dir),
             )
 
         assert result["isError"] is False
@@ -86,8 +89,10 @@ class TestExtractObjects:
         pcap.write_bytes(b"fake")
 
         result = await call(
-            mcp, "extract_objects",
-            file_path=str(pcap), protocol="foobar",
+            mcp,
+            "extract_objects",
+            file_path=str(pcap),
+            protocol="foobar",
         )
         assert result["isError"] is True
         assert "foobar" in result["content"][0]["text"]
@@ -98,7 +103,8 @@ class TestExtractObjects:
         register_advanced_tools(mcp, mock_tshark, fmt, sec)
 
         result = await call(
-            mcp, "extract_objects",
+            mcp,
+            "extract_objects",
             file_path="../../../etc/passwd",
         )
         assert result["isError"] is True
@@ -117,11 +123,16 @@ class TestExtractObjects:
         mock_proc.returncode = 0
         mock_proc.communicate = AsyncMock(return_value=(b"", b""))
 
-        with patch("netmcp.tools.advanced.shutil.which", return_value="/usr/bin/tshark"), \
-             patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+        with (
+            patch("netmcp.tools.advanced.shutil.which", return_value="/usr/bin/tshark"),
+            patch("asyncio.create_subprocess_exec", return_value=mock_proc),
+        ):
             result = await call(
-                mcp, "extract_objects",
-                file_path=str(pcap), protocol="http", output_dir=str(out_dir),
+                mcp,
+                "extract_objects",
+                file_path=str(pcap),
+                protocol="http",
+                output_dir=str(out_dir),
             )
 
         assert result["isError"] is False
@@ -160,8 +171,10 @@ class TestGetIoStatistics:
         )
 
         result = await call(
-            mcp, "get_io_statistics",
-            file_path=str(pcap), interval="1",
+            mcp,
+            "get_io_statistics",
+            file_path=str(pcap),
+            interval="1",
         )
 
         assert result["isError"] is False
@@ -182,8 +195,11 @@ class TestGetIoStatistics:
         )
 
         result = await call(
-            mcp, "get_io_statistics",
-            file_path=str(pcap), interval="5", display_filter="tcp",
+            mcp,
+            "get_io_statistics",
+            file_path=str(pcap),
+            interval="5",
+            display_filter="tcp",
         )
 
         assert result["isError"] is False
@@ -203,24 +219,30 @@ class TestGetIoStatistics:
 
         # Non-numeric interval
         result = await call(
-            mcp, "get_io_statistics",
-            file_path=str(pcap), interval="abc",
+            mcp,
+            "get_io_statistics",
+            file_path=str(pcap),
+            interval="abc",
         )
         assert result["isError"] is True
         assert "interval" in result["content"][0]["text"].lower()
 
         # Negative interval
         result = await call(
-            mcp, "get_io_statistics",
-            file_path=str(pcap), interval="-5",
+            mcp,
+            "get_io_statistics",
+            file_path=str(pcap),
+            interval="-5",
         )
         assert result["isError"] is True
         assert "interval" in result["content"][0]["text"].lower()
 
         # Zero interval
         result = await call(
-            mcp, "get_io_statistics",
-            file_path=str(pcap), interval="0",
+            mcp,
+            "get_io_statistics",
+            file_path=str(pcap),
+            interval="0",
         )
         assert result["isError"] is True
 
@@ -254,8 +276,10 @@ class TestGetConversationStats:
         )
 
         result = await call(
-            mcp, "get_conversation_stats",
-            file_path=str(pcap), conv_type="ip",
+            mcp,
+            "get_conversation_stats",
+            file_path=str(pcap),
+            conv_type="ip",
         )
 
         assert result["isError"] is False
@@ -273,8 +297,10 @@ class TestGetConversationStats:
         pcap.write_bytes(b"fake")
 
         result = await call(
-            mcp, "get_conversation_stats",
-            file_path=str(pcap), conv_type="foo",
+            mcp,
+            "get_conversation_stats",
+            file_path=str(pcap),
+            conv_type="foo",
         )
         assert result["isError"] is True
         assert "foo" in result["content"][0]["text"]

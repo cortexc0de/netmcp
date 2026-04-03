@@ -339,7 +339,9 @@ class TsharkInterface:
         allowed_protos = {"tcp", "udp"}
         allowed_fmts = {"ascii", "hex", "raw"}
         if proto not in allowed_protos:
-            raise ValueError(f"Invalid protocol: {proto!r}. Allowed: {', '.join(sorted(allowed_protos))}")
+            raise ValueError(
+                f"Invalid protocol: {proto!r}. Allowed: {', '.join(sorted(allowed_protos))}"
+            )
         if fmt not in allowed_fmts:
             raise ValueError(f"Invalid format: {fmt!r}. Allowed: {', '.join(sorted(allowed_fmts))}")
 
@@ -429,9 +431,7 @@ class TsharkInterface:
             result = await asyncio.wait_for(
                 loop.run_in_executor(
                     None,
-                    lambda: subprocess.run(
-                        cmd, capture_output=True, text=True, shell=False
-                    ),
+                    lambda: subprocess.run(cmd, capture_output=True, text=True, shell=False),
                 ),
                 timeout=timeout,
             )

@@ -66,9 +66,25 @@ def _build_flow_diagram_text(flows: list[dict]) -> str:
     for f in flows:
         label = f.get("summary", "")
         if f["src"] == ep_a:
-            arrow = " " * col_a + "│" + "── " + label + " " + "─" * max(1, arrow_len - len(label) - 5) + ">│"
+            arrow = (
+                " " * col_a
+                + "│"
+                + "── "
+                + label
+                + " "
+                + "─" * max(1, arrow_len - len(label) - 5)
+                + ">│"
+            )
         else:
-            arrow = " " * col_a + "│<" + "─" * max(1, arrow_len - len(label) - 5) + " " + label + " ──" + "│"
+            arrow = (
+                " " * col_a
+                + "│<"
+                + "─" * max(1, arrow_len - len(label) - 5)
+                + " "
+                + label
+                + " ──"
+                + "│"
+            )
         lines.append(arrow)
 
     return "\n".join(lines)
@@ -149,12 +165,14 @@ def _parse_packet_rows(rows: list[dict]) -> list[dict]:
         else:
             summary = f"data ({frame_len} bytes)" if frame_len else "data"
 
-        flows.append({
-            "src": src,
-            "dst": dst,
-            "summary": summary,
-            "frame_len": int(frame_len) if frame_len and frame_len.isdigit() else 0,
-        })
+        flows.append(
+            {
+                "src": src,
+                "dst": dst,
+                "summary": summary,
+                "frame_len": int(frame_len) if frame_len and frame_len.isdigit() else 0,
+            }
+        )
 
     return flows
 
@@ -219,26 +237,36 @@ def register_flow_tls_tools(
                 )
             max_flows = max(1, min(max_flows, _MAX_FLOWS_LIMIT))
 
-            sec.audit_log("visualize_network_flows", {
-                "filepath": str(validated_path),
-                "flow_type": flow_type,
-                "output_format": output_format,
-            })
+            sec.audit_log(
+                "visualize_network_flows",
+                {
+                    "filepath": str(validated_path),
+                    "flow_type": flow_type,
+                    "output_format": output_format,
+                },
+            )
 
             # Extract packet-level data for the diagram
             fields = [
-                "ip.src", "ip.dst",
-                "tcp.srcport", "tcp.dstport",
-                "udp.srcport", "udp.dstport",
+                "ip.src",
+                "ip.dst",
+                "tcp.srcport",
+                "tcp.dstport",
+                "udp.srcport",
+                "udp.dstport",
                 "tcp.flags.str",
-                "http.request.method", "http.request.uri",
+                "http.request.method",
+                "http.request.uri",
                 "http.response.code",
-                "frame.number", "frame.len",
+                "frame.number",
+                "frame.len",
             ]
             display_filter = flow_type
 
             rows = await tshark.export_fields(
-                str(validated_path), fields, display_filter=display_filter,
+                str(validated_path),
+                fields,
+                display_filter=display_filter,
             )
 
             parsed = _parse_packet_rows(rows)
@@ -323,20 +351,40 @@ def register_flow_tls_tools(
                     )
                 validated_output = str(out_path)
 
-            sec.audit_log("decrypt_tls_traffic", {
-                "filepath": str(validated_path),
-                "keylog_file": str(keylog_resolved),
-                "output_file": validated_output or "(none)",
-            })
+            sec.audit_log(
+                "decrypt_tls_traffic",
+                {
+                    "filepath": str(validated_path),
+                    "keylog_file": str(keylog_resolved),
+                    "output_file": validated_output or "(none)",
+                },
+            )
 
             # Decrypt and extract HTTP layer
             tls_option = f"tls.keylog_file:{keylog_resolved}"
             result = await tshark._run(
-                ["-r", str(validated_path), "-o", tls_option, "-T", "fields",
-                 "-e", "http.request.method", "-e", "http.host",
-                 "-e", "http.request.uri", "-e", "http.response.code",
-                 "-e", "http.content_type", "-e", "frame.number",
-                 "-Y", "http"],
+                [
+                    "-r",
+                    str(validated_path),
+                    "-o",
+                    tls_option,
+                    "-T",
+                    "fields",
+                    "-e",
+                    "http.request.method",
+                    "-e",
+                    "http.host",
+                    "-e",
+                    "http.request.uri",
+                    "-e",
+                    "http.response.code",
+                    "-e",
+                    "http.content_type",
+                    "-e",
+                    "frame.number",
+                    "-Y",
+                    "http",
+                ],
                 timeout=60.0,
             )
 
@@ -344,8 +392,12 @@ def register_flow_tls_tools(
             http_requests: list[dict] = []
             http_responses: list[dict] = []
             field_names = [
-                "http.request.method", "http.host", "http.request.uri",
-                "http.response.code", "http.content_type", "frame.number",
+                "http.request.method",
+                "http.host",
+                "http.request.uri",
+                "http.response.code",
+                "http.content_type",
+                "frame.number",
             ]
 
             for line in result.stdout.strip().split("\n"):
@@ -356,32 +408,42 @@ def register_flow_tls_tools(
                 method = row.get("http.request.method", "")
                 resp_code = row.get("http.response.code", "")
                 if method:
-                    http_requests.append({
-                        "method": method,
-                        "host": row.get("http.host", ""),
-                        "uri": row.get("http.request.uri", ""),
-                        "frame": row.get("frame.number", ""),
-                    })
+                    http_requests.append(
+                        {
+                            "method": method,
+                            "host": row.get("http.host", ""),
+                            "uri": row.get("http.request.uri", ""),
+                            "frame": row.get("frame.number", ""),
+                        }
+                    )
                 if resp_code:
-                    http_responses.append({
-                        "code": resp_code,
-                        "content_type": row.get("http.content_type", ""),
-                        "frame": row.get("frame.number", ""),
-                    })
+                    http_responses.append(
+                        {
+                            "code": resp_code,
+                            "content_type": row.get("http.content_type", ""),
+                            "frame": row.get("frame.number", ""),
+                        }
+                    )
 
             decrypted_packets = len(http_requests) + len(http_responses)
 
             # Optionally write decrypted pcapng
             if validated_output:
                 write_result = await tshark._run(
-                    ["-r", str(validated_path), "-o", tls_option,
-                     "-w", validated_output, "-F", "pcapng"],
+                    [
+                        "-r",
+                        str(validated_path),
+                        "-o",
+                        tls_option,
+                        "-w",
+                        validated_output,
+                        "-F",
+                        "pcapng",
+                    ],
                     timeout=60.0,
                 )
                 if write_result.returncode != 0:
-                    raise RuntimeError(
-                        f"Failed to write decrypted capture: {write_result.stderr}"
-                    )
+                    raise RuntimeError(f"Failed to write decrypted capture: {write_result.stderr}")
 
             output = {
                 "filepath": str(validated_path),

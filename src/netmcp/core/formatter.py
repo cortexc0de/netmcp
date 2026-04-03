@@ -8,14 +8,15 @@ from typing import Any, ClassVar
 # Standardized error codes
 class ErrorCode:
     """NetMCP error code constants."""
-    INTERNAL = "NETMCP_001"          # Unexpected internal error
-    VALIDATION = "NETMCP_002"        # Input validation failure
-    TOOL_EXECUTION = "NETMCP_003"    # External tool execution error (tshark, nmap)
-    FILE_ERROR = "NETMCP_004"        # File not found, permission, or format error
-    TIMEOUT = "NETMCP_005"           # Operation timed out
-    RATE_LIMITED = "NETMCP_006"      # Rate limit exceeded
-    PERMISSION = "NETMCP_007"        # Insufficient permissions
-    NOT_AVAILABLE = "NETMCP_008"     # Required tool not installed
+
+    INTERNAL = "NETMCP_001"  # Unexpected internal error
+    VALIDATION = "NETMCP_002"  # Input validation failure
+    TOOL_EXECUTION = "NETMCP_003"  # External tool execution error (tshark, nmap)
+    FILE_ERROR = "NETMCP_004"  # File not found, permission, or format error
+    TIMEOUT = "NETMCP_005"  # Operation timed out
+    RATE_LIMITED = "NETMCP_006"  # Rate limit exceeded
+    PERMISSION = "NETMCP_007"  # Insufficient permissions
+    NOT_AVAILABLE = "NETMCP_008"  # Required tool not installed
 
 
 class OutputFormatter:

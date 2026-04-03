@@ -44,7 +44,9 @@ def register_nmap_tools(
             sec.validate_target(target)
             if not sec.check_rate_limit("nmap_scan", max_ops=10, window_seconds=3600):
                 raise RuntimeError("Rate limit exceeded: max 10 nmap scans per hour")
-            sec.audit_log("nmap_port_scan", {"target": target, "ports": ports, "scan_type": scan_type})
+            sec.audit_log(
+                "nmap_port_scan", {"target": target, "ports": ports, "scan_type": scan_type}
+            )
             if ports:
                 sec.validate_port_range(ports)
             if scan_type not in ("syn", "connect", "udp"):

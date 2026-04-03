@@ -41,9 +41,7 @@ class TestCaptureErrors:
     @pytest.mark.asyncio
     async def test_get_network_interfaces_error(self, mock_tshark, fmt, sec):
         """Lines 32-33: exception in get_network_interfaces."""
-        mock_tshark.list_interfaces = AsyncMock(
-            side_effect=RuntimeError("tshark not found")
-        )
+        mock_tshark.list_interfaces = AsyncMock(side_effect=RuntimeError("tshark not found"))
         mcp = FastMCP("test")
         register_capture_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "get_network_interfaces")
@@ -55,23 +53,17 @@ class TestCaptureErrors:
         mcp = FastMCP("test")
         register_capture_tools(mcp, mock_tshark, fmt, sec)
         with patch.object(sec, "check_rate_limit", return_value=False):
-            result = await call(
-                mcp, "capture_live_packets", interface="eth0", duration=5
-            )
+            result = await call(mcp, "capture_live_packets", interface="eth0", duration=5)
             assert result["isError"] is True
             assert "Rate limit" in str(result)
 
     @pytest.mark.asyncio
     async def test_capture_live_exception(self, mock_tshark, fmt, sec):
         """Lines 90-93: general exception in capture_live_packets."""
-        mock_tshark.capture_live = AsyncMock(
-            side_effect=RuntimeError("capture failed")
-        )
+        mock_tshark.capture_live = AsyncMock(side_effect=RuntimeError("capture failed"))
         mcp = FastMCP("test")
         register_capture_tools(mcp, mock_tshark, fmt, sec)
-        result = await call(
-            mcp, "capture_live_packets", interface="eth0", duration=5
-        )
+        result = await call(mcp, "capture_live_packets", interface="eth0", duration=5)
         assert result["isError"] is True
 
     @pytest.mark.asyncio
@@ -86,9 +78,7 @@ class TestCaptureErrors:
     @pytest.mark.asyncio
     async def test_quick_capture_exception(self, mock_tshark, fmt, sec):
         """Lines 167-170: exception in quick_capture."""
-        mock_tshark.capture_live = AsyncMock(
-            side_effect=RuntimeError("capture failed")
-        )
+        mock_tshark.capture_live = AsyncMock(side_effect=RuntimeError("capture failed"))
         mcp = FastMCP("test")
         register_capture_tools(mcp, mock_tshark, fmt, sec)
         result = await call(mcp, "quick_capture", interface="eth0")
@@ -160,9 +150,7 @@ class TestCaptureCleanup:
             raise OSError("file gone")
 
         with patch("os.unlink", side_effect=unlink_raise):
-            result = await call(
-                mcp, "capture_live_packets", interface="eth0", duration=5
-            )
+            result = await call(mcp, "capture_live_packets", interface="eth0", duration=5)
             # Should still succeed despite cleanup error
             assert result["isError"] is False
 

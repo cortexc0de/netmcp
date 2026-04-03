@@ -155,10 +155,15 @@ def register_analysis_tools(
             sec.validate_interface(interface)
             if not sec.check_rate_limit("live_capture", max_ops=30, window_seconds=3600):
                 raise RuntimeError("Rate limit exceeded: max 30 live captures per hour")
-            sec.audit_log("capture_targeted_traffic", {
-                "interface": interface, "target_host": target_host,
-                "target_port": target_port, "protocol": protocol,
-            })
+            sec.audit_log(
+                "capture_targeted_traffic",
+                {
+                    "interface": interface,
+                    "target_host": target_host,
+                    "target_port": target_port,
+                    "protocol": protocol,
+                },
+            )
 
             # Build BPF filter
             filter_parts = []
@@ -212,6 +217,7 @@ def register_analysis_tools(
                 return fmt.format_success(result, title="Targeted Capture")
             finally:
                 import os
+
                 try:
                     os.unlink(str(pcap_path))
                 except OSError:
@@ -322,6 +328,7 @@ def register_analysis_tools(
                     stats = await tshark.protocol_stats(str(pcap_path))
                 finally:
                     import os
+
                     try:
                         os.unlink(str(pcap_path))
                     except OSError:
@@ -696,11 +703,14 @@ def register_analysis_tools(
             if display_filter:
                 sec.validate_display_filter(display_filter)
 
-            sec.audit_log("deep_packet_analysis", {
-                "filepath": str(validated_path),
-                "count": count,
-                "display_filter": display_filter or "(none)",
-            })
+            sec.audit_log(
+                "deep_packet_analysis",
+                {
+                    "filepath": str(validated_path),
+                    "count": count,
+                    "display_filter": display_filter or "(none)",
+                },
+            )
 
             tshark_bin = shutil.which("tshark")
             if not tshark_bin:
@@ -721,10 +731,12 @@ def register_analysis_tools(
                 packets = []
 
             if not packets:
-                return fmt.truncate_output(fmt.format_success(
-                    "## Глубокий анализ пакетов\n\nПакеты не найдены.",
-                    title="Deep Packet Analysis",
-                ))
+                return fmt.truncate_output(
+                    fmt.format_success(
+                        "## Глубокий анализ пакетов\n\nПакеты не найдены.",
+                        title="Deep Packet Analysis",
+                    )
+                )
 
             # --- Extract data from packets ---
             timestamps: list[float] = []
@@ -798,30 +810,36 @@ def register_analysis_tools(
                         frame_num = frame_layer.get("frame.number", "?")
                         if isinstance(frame_num, list):
                             frame_num = frame_num[0] if frame_num else "?"
-                        anomalies.append({
-                            "frame": frame_num,
-                            "type": "TCP Retransmission",
-                            "detail": f"{src_ip} -> {dst_ip}",
-                        })
+                        anomalies.append(
+                            {
+                                "frame": frame_num,
+                                "type": "TCP Retransmission",
+                                "detail": f"{src_ip} -> {dst_ip}",
+                            }
+                        )
                     if tcp_analysis.get("tcp.analysis.duplicate_ack"):
                         frame_num = frame_layer.get("frame.number", "?")
                         if isinstance(frame_num, list):
                             frame_num = frame_num[0] if frame_num else "?"
-                        anomalies.append({
-                            "frame": frame_num,
-                            "type": "Duplicate ACK",
-                            "detail": f"{src_ip} -> {dst_ip}",
-                        })
+                        anomalies.append(
+                            {
+                                "frame": frame_num,
+                                "type": "Duplicate ACK",
+                                "detail": f"{src_ip} -> {dst_ip}",
+                            }
+                        )
 
                 if "_ws.expert" in layers:
                     frame_num = frame_layer.get("frame.number", "?")
                     if isinstance(frame_num, list):
                         frame_num = frame_num[0] if frame_num else "?"
-                    anomalies.append({
-                        "frame": frame_num,
-                        "type": "Expert Info",
-                        "detail": str(layers["_ws.expert"])[:120],
-                    })
+                    anomalies.append(
+                        {
+                            "frame": frame_num,
+                            "type": "Expert Info",
+                            "detail": str(layers["_ws.expert"])[:120],
+                        }
+                    )
 
             # --- Build markdown report ---
             lines: list[str] = ["## Глубокий анализ пакетов\n"]
@@ -832,6 +850,7 @@ def register_analysis_tools(
                 ts_sorted = sorted(timestamps)
                 duration = ts_sorted[-1] - ts_sorted[0]
                 from datetime import UTC, datetime
+
                 first_ts = datetime.fromtimestamp(ts_sorted[0], tz=UTC).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )

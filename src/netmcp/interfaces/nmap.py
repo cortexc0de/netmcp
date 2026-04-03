@@ -87,9 +87,7 @@ class NmapInterface:
                 raise RuntimeError(f"Nmap subprocess error: {e}") from e
 
         try:
-            result = await asyncio.wait_for(
-                loop.run_in_executor(None, _scan), timeout=timeout
-            )
+            result = await asyncio.wait_for(loop.run_in_executor(None, _scan), timeout=timeout)
             return result
         except TimeoutError:
             raise TimeoutError(f"Nmap scan timed out after {timeout}s for {target}") from None

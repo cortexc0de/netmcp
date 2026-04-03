@@ -20,6 +20,7 @@ def mcp():
         def wrapper(fn):
             mock._resources[uri] = fn
             return fn
+
         return wrapper
 
     mock.resource = resource_decorator
@@ -54,16 +55,12 @@ class TestAnalysisHistoryEmpty:
     def test_analysis_history_empty(self, mcp, tshark, nmap, fmt):
         history = CaptureHistory()
         resources = _register(mcp, tshark, nmap, fmt, history)
-        result = asyncio.get_event_loop().run_until_complete(
-            resources["analysis://history"]()
-        )
+        result = asyncio.get_event_loop().run_until_complete(resources["analysis://history"]())
         assert result == "No analysis history yet."
 
     def test_analysis_history_none(self, mcp, tshark, nmap, fmt):
         resources = _register(mcp, tshark, nmap, fmt, history=None)
-        result = asyncio.get_event_loop().run_until_complete(
-            resources["analysis://history"]()
-        )
+        result = asyncio.get_event_loop().run_until_complete(resources["analysis://history"]())
         assert result == "History tracking not enabled."
 
 
@@ -74,9 +71,7 @@ class TestAnalysisHistoryWithEntries:
         history.add("scan_network", "192.168.1.0/24", "3 hosts found")
 
         resources = _register(mcp, tshark, nmap, fmt, history)
-        result = asyncio.get_event_loop().run_until_complete(
-            resources["analysis://history"]()
-        )
+        result = asyncio.get_event_loop().run_until_complete(resources["analysis://history"]())
 
         assert "# Analysis History" in result
         assert "analyze_pcap" in result
@@ -91,9 +86,7 @@ class TestAnalysisHistoryWithEntries:
 class TestNetworkHelpResource:
     def test_network_help_resource(self, mcp, tshark, nmap, fmt):
         resources = _register(mcp, tshark, nmap, fmt)
-        result = asyncio.get_event_loop().run_until_complete(
-            resources["network://help"]()
-        )
+        result = asyncio.get_event_loop().run_until_complete(resources["network://help"]())
 
         assert "# NetMCP" in result
         assert "Quick Start" in result

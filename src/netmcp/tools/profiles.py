@@ -231,9 +231,7 @@ def register_profile_tools(
                 colorfilters_path = default_dir / "colorfilters"
 
             if not colorfilters_path.is_file():
-                raise FileNotFoundError(
-                    f"colorfilters file not found at {colorfilters_path}"
-                )
+                raise FileNotFoundError(f"colorfilters file not found at {colorfilters_path}")
 
             text = colorfilters_path.read_text(encoding="utf-8", errors="replace")
             filters = _parse_colorfilters(text)
@@ -319,9 +317,7 @@ def register_profile_tools(
 
                 import json
 
-                packets = (
-                    json.loads(read_result.stdout) if read_result.stdout.strip() else []
-                )
+                packets = json.loads(read_result.stdout) if read_result.stdout.strip() else []
 
                 return fmt.format_success(
                     {

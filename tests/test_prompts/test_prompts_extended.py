@@ -32,17 +32,13 @@ class TestSecurityAuditPrompt:
 
     @pytest.mark.asyncio
     async def test_returns_string(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "security_audit", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("security_audit", {})
         text = _get_text(result)
         assert isinstance(text, str) and len(text) > 0
 
     @pytest.mark.asyncio
     async def test_contains_keywords(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "security_audit", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("security_audit", {})
         text = _get_text(result)
         assert "analyze_pcap" in text
         assert "extract_credentials" in text
@@ -59,17 +55,13 @@ class TestNetworkTroubleshootingPrompt:
 
     @pytest.mark.asyncio
     async def test_returns_string(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "network_troubleshooting", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("network_troubleshooting", {})
         text = _get_text(result)
         assert isinstance(text, str) and len(text) > 0
 
     @pytest.mark.asyncio
     async def test_contains_keywords(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "network_troubleshooting", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("network_troubleshooting", {})
         text = _get_text(result)
         assert "quick_capture" in text
         assert "get_protocol_hierarchy" in text
@@ -86,17 +78,13 @@ class TestIncidentResponsePrompt:
 
     @pytest.mark.asyncio
     async def test_returns_string(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "incident_response", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("incident_response", {})
         text = _get_text(result)
         assert isinstance(text, str) and len(text) > 0
 
     @pytest.mark.asyncio
     async def test_contains_keywords(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "incident_response", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("incident_response", {})
         text = _get_text(result)
         assert "get_capture_info" in text
         assert "check_threat_intelligence" in text
@@ -113,17 +101,13 @@ class TestTrafficAnalysisPrompt:
 
     @pytest.mark.asyncio
     async def test_returns_string(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "traffic_analysis", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("traffic_analysis", {})
         text = _get_text(result)
         assert isinstance(text, str) and len(text) > 0
 
     @pytest.mark.asyncio
     async def test_contains_keywords(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "traffic_analysis", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("traffic_analysis", {})
         text = _get_text(result)
         assert "analyze_pcap" in text
         assert "get_protocol_hierarchy" in text
@@ -139,17 +123,13 @@ class TestCredentialAnalysisPrompt:
 
     @pytest.mark.asyncio
     async def test_returns_string(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "credential_analysis", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("credential_analysis", {})
         text = _get_text(result)
         assert isinstance(text, str) and len(text) > 0
 
     @pytest.mark.asyncio
     async def test_contains_keywords(self, mcp_with_prompts):
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "credential_analysis", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("credential_analysis", {})
         text = _get_text(result)
         assert "extract_credentials" in text
         assert "analyze_tls_handshake" in text

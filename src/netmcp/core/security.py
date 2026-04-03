@@ -221,7 +221,9 @@ class SecurityValidator:
         """
         msg = f"AUDIT: {operation}"
         if details:
-            safe_details = {k: v for k, v in details.items() if k not in ("password", "secret", "key", "token")}
+            safe_details = {
+                k: v for k, v in details.items() if k not in ("password", "secret", "key", "token")
+            }
             msg += f" | {safe_details}"
         logger.info(msg)
 
@@ -243,15 +245,36 @@ class SecurityValidator:
     # ── Nmap flags validation ─────────────────────────────────────────
 
     _ALLOWED_NMAP_FLAGS: ClassVar[set[str]] = {
-        "-sT", "-sS", "-sU", "-sV", "-sC", "-O", "-F", "-A",
-        "-T0", "-T1", "-T2", "-T3", "-T4", "-T5",
-        "--version-all", "--osscan-guess", "--open",
+        "-sT",
+        "-sS",
+        "-sU",
+        "-sV",
+        "-sC",
+        "-O",
+        "-F",
+        "-A",
+        "-T0",
+        "-T1",
+        "-T2",
+        "-T3",
+        "-T4",
+        "-T5",
+        "--version-all",
+        "--osscan-guess",
+        "--open",
     }
     _DANGEROUS_NMAP_PATTERNS: ClassVar[set[str]] = {
-        "--script-args", "--script-updatedb", "--datadir",
-        "--servicedb", "--versiondb", "--send-eth",
-        "--send-ip", "--privileged", "--release-memory",
-        "--interactive", "--packet-trace",
+        "--script-args",
+        "--script-updatedb",
+        "--datadir",
+        "--servicedb",
+        "--versiondb",
+        "--send-eth",
+        "--send-ip",
+        "--privileged",
+        "--release-memory",
+        "--interactive",
+        "--packet-trace",
     }
 
     def validate_nmap_arguments(self, arguments: str) -> str:
@@ -270,6 +293,7 @@ class SecurityValidator:
             return ""
 
         import shlex
+
         try:
             tokens = shlex.split(arguments)
         except ValueError:
@@ -292,7 +316,12 @@ class SecurityValidator:
             flag = token.split("=")[0] if "=" in token else token
 
             # Handle -p (port spec) — may be -p, -p80, -p80,443
-            if flag == "-p" or (flag.startswith("-p") and not flag.startswith("-p-") and len(flag) > 2 and flag[2:3].isdigit()):
+            if flag == "-p" or (
+                flag.startswith("-p")
+                and not flag.startswith("-p-")
+                and len(flag) > 2
+                and flag[2:3].isdigit()
+            ):
                 if flag == "-p" and "=" not in token:
                     i += 1  # skip the port spec value
                 i += 1

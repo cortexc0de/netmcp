@@ -162,9 +162,7 @@ def register_pcap_tools(
 
             mergecap_bin = shutil.which("mergecap")
             if not mergecap_bin:
-                raise FileNotFoundError(
-                    "mergecap not found. Install Wireshark to get mergecap."
-                )
+                raise FileNotFoundError("mergecap not found. Install Wireshark to get mergecap.")
 
             cmd = [mergecap_bin, "-w", str(output_path)]
             if not chronological:
@@ -230,9 +228,7 @@ def register_pcap_tools(
 
             editcap_bin = shutil.which("editcap")
             if not editcap_bin:
-                raise FileNotFoundError(
-                    "editcap not found. Install Wireshark to get editcap."
-                )
+                raise FileNotFoundError("editcap not found. Install Wireshark to get editcap.")
 
             cmd = [editcap_bin]
 
@@ -327,9 +323,7 @@ def register_pcap_tools(
                 raise RuntimeError(f"tshark decode failed: {result.stderr}")
 
             if not result.stdout.strip():
-                raise ValueError(
-                    f"Packet {packet_number} not found in {validated_path}"
-                )
+                raise ValueError(f"Packet {packet_number} not found in {validated_path}")
 
             layers: list[str] = []
             raw_output = result.stdout
@@ -406,9 +400,7 @@ def register_pcap_tools(
 
             editcap_bin = shutil.which("editcap")
             if not editcap_bin:
-                raise FileNotFoundError(
-                    "editcap not found. Install Wireshark to get editcap."
-                )
+                raise FileNotFoundError("editcap not found. Install Wireshark to get editcap.")
 
             if output_path:
                 out = Path(output_path)
@@ -435,11 +427,14 @@ def register_pcap_tools(
                     f"editcap failed (rc={proc.returncode}): {stderr.decode().strip()}"
                 )
 
-            sec.audit_log("convert_pcap_format", {
-                "input": str(validated_path),
-                "output": str(out),
-                "format": output_format,
-            })
+            sec.audit_log(
+                "convert_pcap_format",
+                {
+                    "input": str(validated_path),
+                    "output": str(out),
+                    "format": output_format,
+                },
+            )
 
             result = {
                 "input_file": str(validated_path),

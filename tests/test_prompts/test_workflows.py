@@ -30,9 +30,7 @@ class TestWorkflowPrompts:
     async def test_security_audit_prompt(self, mcp_with_prompts):
         """security_audit returns Russian workflow text."""
         assert "security_audit" in mcp_with_prompts._prompt_manager._prompts
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "security_audit", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("security_audit", {})
         text = _get_text(result)
         assert "analyze_pcap" in text
         assert "extract_credentials" in text
@@ -40,27 +38,21 @@ class TestWorkflowPrompts:
     @pytest.mark.asyncio
     async def test_network_troubleshooting_prompt(self, mcp_with_prompts):
         """network_troubleshooting returns workflow text."""
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "network_troubleshooting", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("network_troubleshooting", {})
         text = _get_text(result)
         assert "quick_capture" in text
 
     @pytest.mark.asyncio
     async def test_incident_response_prompt(self, mcp_with_prompts):
         """incident_response returns workflow text."""
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "incident_response", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("incident_response", {})
         text = _get_text(result)
         assert "check_threat_intelligence" in text
 
     @pytest.mark.asyncio
     async def test_traffic_analysis_prompt(self, mcp_with_prompts):
         """traffic_analysis returns workflow text."""
-        result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "traffic_analysis", {}
-        )
+        result = await mcp_with_prompts._prompt_manager.render_prompt("traffic_analysis", {})
         text = _get_text(result)
         assert "analyze_pcap" in text
 

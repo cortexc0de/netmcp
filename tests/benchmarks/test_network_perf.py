@@ -31,19 +31,21 @@ class TestProtocolStatsParserPerf:
     """Benchmark protocol stats parsing."""
 
     def test_parse_small_output(self, benchmark):
-        output = "\n".join([
-            "===================================================================",
-            "Protocol Hierarchy Statistics",
-            "Filter:",
-            "",
-            "eth                                      frames:1000 bytes:500000",
-            "  ip                                     frames:950 bytes:475000",
-            "    tcp                                  frames:800 bytes:400000",
-            "      http                               frames:200 bytes:100000",
-            "    udp                                  frames:150 bytes:75000",
-            "      dns                                frames:100 bytes:50000",
-            "===================================================================",
-        ])
+        output = "\n".join(
+            [
+                "===================================================================",
+                "Protocol Hierarchy Statistics",
+                "Filter:",
+                "",
+                "eth                                      frames:1000 bytes:500000",
+                "  ip                                     frames:950 bytes:475000",
+                "    tcp                                  frames:800 bytes:400000",
+                "      http                               frames:200 bytes:100000",
+                "    udp                                  frames:150 bytes:75000",
+                "      dns                                frames:100 bytes:50000",
+                "===================================================================",
+            ]
+        )
         benchmark(TsharkInterface._parse_protocol_stats, output)
 
     def test_parse_large_output(self, benchmark):

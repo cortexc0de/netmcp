@@ -72,8 +72,10 @@ def register_advanced_tools(
 
             cmd = [
                 tshark_bin,
-                "-r", str(validated_path),
-                "--export-objects", f"{protocol},{out_path}",
+                "-r",
+                str(validated_path),
+                "--export-objects",
+                f"{protocol},{out_path}",
             ]
 
             proc = await asyncio.create_subprocess_exec(
@@ -93,17 +95,22 @@ def register_advanced_tools(
             for entry in os.listdir(out_path):
                 full = os.path.join(out_path, entry)
                 if os.path.isfile(full):
-                    extracted_files.append({
-                        "filename": entry,
-                        "size_bytes": os.path.getsize(full),
-                    })
+                    extracted_files.append(
+                        {
+                            "filename": entry,
+                            "size_bytes": os.path.getsize(full),
+                        }
+                    )
 
-            sec.audit_log("extract_objects", {
-                "filepath": str(validated_path),
-                "protocol": protocol,
-                "output_dir": out_path,
-                "files_extracted": len(extracted_files),
-            })
+            sec.audit_log(
+                "extract_objects",
+                {
+                    "filepath": str(validated_path),
+                    "protocol": protocol,
+                    "output_dir": out_path,
+                    "files_extracted": len(extracted_files),
+                },
+            )
 
             result = {
                 "filepath": str(validated_path),
@@ -149,7 +156,9 @@ def register_advanced_tools(
             try:
                 interval_val = float(interval)
             except (ValueError, TypeError):
-                raise ValueError(f"Invalid interval: {interval!r}. Must be a positive number.") from None
+                raise ValueError(
+                    f"Invalid interval: {interval!r}. Must be a positive number."
+                ) from None
 
             if interval_val <= 0:
                 raise ValueError(f"Invalid interval: {interval!r}. Must be a positive number.")
@@ -178,16 +187,21 @@ def register_advanced_tools(
                     if len(parts) >= 2:
                         time_part = parts[0].strip()
                         count_part = parts[1].strip()
-                        intervals.append({
-                            "time_range": time_part,
-                            "frames": count_part,
-                        })
+                        intervals.append(
+                            {
+                                "time_range": time_part,
+                                "frames": count_part,
+                            }
+                        )
 
-            sec.audit_log("get_io_statistics", {
-                "filepath": str(validated_path),
-                "interval": interval,
-                "display_filter": display_filter or "(none)",
-            })
+            sec.audit_log(
+                "get_io_statistics",
+                {
+                    "filepath": str(validated_path),
+                    "interval": interval,
+                    "display_filter": display_filter or "(none)",
+                },
+            )
 
             output = {
                 "filepath": str(validated_path),
@@ -232,8 +246,7 @@ def register_advanced_tools(
 
             if conv_type not in _CONV_TYPES:
                 raise ValueError(
-                    f"Invalid conv_type: {conv_type!r}. "
-                    f"Allowed: {', '.join(sorted(_CONV_TYPES))}"
+                    f"Invalid conv_type: {conv_type!r}. Allowed: {', '.join(sorted(_CONV_TYPES))}"
                 )
 
             if display_filter:
@@ -278,20 +291,25 @@ def register_advanced_tools(
                         arrow_idx = parts.index("<->")
                         addr_a = parts[arrow_idx - 1] if arrow_idx > 0 else ""
                         addr_b = parts[arrow_idx + 1] if arrow_idx + 1 < len(parts) else ""
-                        remaining = parts[arrow_idx + 2:]
-                        conversations.append({
-                            "address_a": addr_a,
-                            "address_b": addr_b,
-                            "details": " ".join(remaining),
-                        })
+                        remaining = parts[arrow_idx + 2 :]
+                        conversations.append(
+                            {
+                                "address_a": addr_a,
+                                "address_b": addr_b,
+                                "details": " ".join(remaining),
+                            }
+                        )
                     except (ValueError, IndexError):
                         continue
 
-            sec.audit_log("get_conversation_stats", {
-                "filepath": str(validated_path),
-                "conv_type": conv_type,
-                "display_filter": display_filter or "(none)",
-            })
+            sec.audit_log(
+                "get_conversation_stats",
+                {
+                    "filepath": str(validated_path),
+                    "conv_type": conv_type,
+                    "display_filter": display_filter or "(none)",
+                },
+            )
 
             output = {
                 "filepath": str(validated_path),
@@ -301,9 +319,7 @@ def register_advanced_tools(
                 "conversations": conversations,
                 "raw_output": result.stdout,
             }
-            return fmt.truncate_output(
-                fmt.format_success(output, title="Conversation Statistics")
-            )
+            return fmt.truncate_output(fmt.format_success(output, title="Conversation Statistics"))
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
@@ -332,9 +348,7 @@ def register_advanced_tools(
         """
         try:
             if report_format not in ("markdown", "html"):
-                raise ValueError(
-                    f"Invalid format: {report_format!r}. Allowed: 'markdown', 'html'"
-                )
+                raise ValueError(f"Invalid format: {report_format!r}. Allowed: 'markdown', 'html'")
 
             validated_path = sec.sanitize_filepath(file_path)
             section_list = [s.strip() for s in sections.split(",") if s.strip()]
@@ -356,7 +370,9 @@ def register_advanced_tools(
                         ["-r", str(validated_path), "-z", "expert", "-q"],
                         timeout=60.0,
                     )
-                    section_outputs["security"] = expert_result.stdout if expert_result.returncode == 0 else ""
+                    section_outputs["security"] = (
+                        expert_result.stdout if expert_result.returncode == 0 else ""
+                    )
                 elif section in section_stats_map:
                     stat_arg = section_stats_map[section]
                     result = await tshark._run(
@@ -365,11 +381,14 @@ def register_advanced_tools(
                     )
                     section_outputs[section] = result.stdout if result.returncode == 0 else ""
 
-            sec.audit_log("generate_report", {
-                "filepath": str(validated_path),
-                "format": report_format,
-                "sections": section_list,
-            })
+            sec.audit_log(
+                "generate_report",
+                {
+                    "filepath": str(validated_path),
+                    "format": report_format,
+                    "sections": section_list,
+                },
+            )
 
             if report_format == "markdown":
                 return _build_markdown_report(validated_path, section_list, section_outputs)
@@ -464,13 +483,13 @@ def register_advanced_tools(
                 )
 
             proc = await asyncio.create_subprocess_exec(
-                capinfos_bin, "-M", str(validated_path),
+                capinfos_bin,
+                "-M",
+                str(validated_path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                proc.communicate(), timeout=30.0
-            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=30.0)
 
             if proc.returncode != 0:
                 raise RuntimeError(
@@ -491,9 +510,12 @@ def register_advanced_tools(
             for key, val in info.items():
                 lines.append(f"| {key} | {val} |")
 
-            sec.audit_log("get_capture_info", {
-                "filepath": str(validated_path),
-            })
+            sec.audit_log(
+                "get_capture_info",
+                {
+                    "filepath": str(validated_path),
+                },
+            )
 
             md = "\n".join(lines)
             return fmt.truncate_output(fmt.format_success(md, title="Capture Info"))

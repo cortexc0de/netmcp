@@ -91,8 +91,7 @@ def register_resources(
             "nmap_available": nmap.available,
             "tools": (
                 list(mcp._tool_manager._tools.keys())
-                if hasattr(mcp, "_tool_manager")
-                and hasattr(mcp._tool_manager, "_tools")
+                if hasattr(mcp, "_tool_manager") and hasattr(mcp._tool_manager, "_tools")
                 else []
             ),
         }

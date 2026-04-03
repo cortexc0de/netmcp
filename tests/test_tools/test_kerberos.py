@@ -47,27 +47,29 @@ class TestKerberosExtraction:
         pcap = tmp_path / "krb_full.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],  # plaintext creds
-            [
-                {
-                    "kerberos.CNameString": "admin",
-                    "kerberos.realm": "CORP.LOCAL",
-                    "kerberos.cipher": "deadbeef",
-                    "kerberos.type": "",
-                    "kerberos.msg_type": "10",
-                    "frame.number": "3",
-                },
-                {
-                    "kerberos.CNameString": "jdoe",
-                    "kerberos.realm": "CORP.LOCAL",
-                    "kerberos.cipher": "abc123",
-                    "kerberos.type": "",
-                    "kerberos.msg_type": "11",
-                    "frame.number": "5",
-                },
-            ],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],  # plaintext creds
+                [
+                    {
+                        "kerberos.CNameString": "admin",
+                        "kerberos.realm": "CORP.LOCAL",
+                        "kerberos.cipher": "deadbeef",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "10",
+                        "frame.number": "3",
+                    },
+                    {
+                        "kerberos.CNameString": "jdoe",
+                        "kerberos.realm": "CORP.LOCAL",
+                        "kerberos.cipher": "abc123",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "11",
+                        "frame.number": "5",
+                    },
+                ],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
 
@@ -89,19 +91,21 @@ class TestKerberosExtraction:
         pcap = tmp_path / "krb_tgs12.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],
-            [
-                {
-                    "kerberos.CNameString": "svc_http",
-                    "kerberos.realm": "DOMAIN.COM",
-                    "kerberos.cipher": "cafebabe",
-                    "kerberos.type": "",
-                    "kerberos.msg_type": "12",
-                    "frame.number": "9",
-                },
-            ],
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],
+                [
+                    {
+                        "kerberos.CNameString": "svc_http",
+                        "kerberos.realm": "DOMAIN.COM",
+                        "kerberos.cipher": "cafebabe",
+                        "kerberos.type": "",
+                        "kerberos.msg_type": "12",
+                        "frame.number": "9",
+                    },
+                ],
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
 
@@ -120,10 +124,12 @@ class TestKerberosExtraction:
         pcap = tmp_path / "no_krb.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark.export_fields = AsyncMock(side_effect=[
-            [],  # plaintext creds
-            [],  # kerberos creds
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            side_effect=[
+                [],  # plaintext creds
+                [],  # kerberos creds
+            ]
+        )
 
         from netmcp.tools.credentials import register_credential_tools
 
@@ -177,19 +183,23 @@ class TestPrivateIpFiltering:
         threat = ThreatIntelInterface(providers=["urlhaus"])
 
         mock_tshark = AsyncMock()
-        mock_tshark.export_fields = AsyncMock(return_value=[
-            {"ip.src": "192.168.1.1", "ip.dst": "8.8.8.8"},
-            {"ip.src": "10.0.0.1", "ip.dst": "1.2.3.4"},
-            {"ip.src": "127.0.0.1", "ip.dst": "172.16.0.1"},
-        ])
+        mock_tshark.export_fields = AsyncMock(
+            return_value=[
+                {"ip.src": "192.168.1.1", "ip.dst": "8.8.8.8"},
+                {"ip.src": "10.0.0.1", "ip.dst": "1.2.3.4"},
+                {"ip.src": "127.0.0.1", "ip.dst": "172.16.0.1"},
+            ]
+        )
 
         # Mock the check_ip to avoid network calls
-        threat.check_ip = AsyncMock(return_value={
-            "ip": "mock",
-            "is_threat": False,
-            "threat_providers": [],
-            "providers": {},
-        })
+        threat.check_ip = AsyncMock(
+            return_value={
+                "ip": "mock",
+                "is_threat": False,
+                "threat_providers": [],
+                "providers": {},
+            }
+        )
 
         result = await threat.scan_pcap("fake.pcap", mock_tshark)
 

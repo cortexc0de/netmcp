@@ -101,11 +101,8 @@ def register_streaming_tools(
             return fmt.format_success(
                 {
                     "total_packets": total_packets,
-                    "chunks_processed": (offset // chunk_size)
-                    + (1 if offset % chunk_size else 0),
-                    "top_protocols": [
-                        {"protocol": p, "count": c} for p, c in top_protos
-                    ],
+                    "chunks_processed": (offset // chunk_size) + (1 if offset % chunk_size else 0),
+                    "top_protocols": [{"protocol": p, "count": c} for p, c in top_protos],
                     "top_source_ips": [{"ip": ip, "count": c} for ip, c in top_src],
                     "top_dest_ips": [{"ip": ip, "count": c} for ip, c in top_dst],
                 },

@@ -30,9 +30,7 @@ def mock_tshark():
         tshark = TsharkInterface()
         tshark.read_pcap = AsyncMock(return_value=[])
         tshark.protocol_stats = AsyncMock(return_value={})
-        tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="", stderr="")
-        )
+        tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
         yield tshark
 
 
@@ -45,30 +43,32 @@ def _make_tshark_json_packets(n: int = 3) -> str:
     """Build fake tshark -T json output."""
     packets = []
     for i in range(n):
-        packets.append({
-            "_source": {
-                "layers": {
-                    "frame": {
-                        "frame.number": str(i + 1),
-                        "frame.time_epoch": str(1704067200.0 + i * 0.5),
-                        "frame.protocols": "eth:ethertype:ip:tcp:http",
-                        "frame.len": str(200 + i * 10),
-                    },
-                    "ip": {
-                        "ip.src": "192.168.1.1",
-                        "ip.dst": "10.0.0.1",
-                    },
-                    "tcp": {
-                        "tcp.srcport": "443",
-                        "tcp.dstport": "54321",
-                    },
-                    "http": {
-                        "http.request.method": "GET",
-                        "http.host": "example.com",
-                    },
+        packets.append(
+            {
+                "_source": {
+                    "layers": {
+                        "frame": {
+                            "frame.number": str(i + 1),
+                            "frame.time_epoch": str(1704067200.0 + i * 0.5),
+                            "frame.protocols": "eth:ethertype:ip:tcp:http",
+                            "frame.len": str(200 + i * 10),
+                        },
+                        "ip": {
+                            "ip.src": "192.168.1.1",
+                            "ip.dst": "10.0.0.1",
+                        },
+                        "tcp": {
+                            "tcp.srcport": "443",
+                            "tcp.dstport": "54321",
+                        },
+                        "http": {
+                            "http.request.method": "GET",
+                            "http.host": "example.com",
+                        },
+                    }
                 }
             }
-        })
+        )
     return json.dumps(packets)
 
 
@@ -116,9 +116,7 @@ class TestDeepPacketAnalysis:
         pcap = tmp_path / "empty.pcap"
         pcap.write_bytes(b"fake")
 
-        mock_tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="[]", stderr="")
-        )
+        mock_tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="[]", stderr=""))
 
         result = await call(mcp, "deep_packet_analysis", file_path=str(pcap))
         assert result["isError"] is False
@@ -153,7 +151,8 @@ class TestGenerateReport:
         mock_tshark._run = AsyncMock(side_effect=side_effect)
 
         result = await call(
-            mcp, "generate_report",
+            mcp,
+            "generate_report",
             file_path=str(pcap),
             report_format="markdown",
             sections="summary,protocols",
@@ -178,7 +177,8 @@ class TestGenerateReport:
         )
 
         result = await call(
-            mcp, "generate_report",
+            mcp,
+            "generate_report",
             file_path=str(pcap),
             report_format="html",
             sections="summary",
@@ -201,7 +201,8 @@ class TestGenerateReport:
         pcap.write_bytes(b"fake")
 
         result = await call(
-            mcp, "generate_report",
+            mcp,
+            "generate_report",
             file_path=str(pcap),
             report_format="pdf",
         )
@@ -236,9 +237,7 @@ class TestGetCaptureInfo:
         with patch("shutil.which", return_value="/usr/bin/capinfos"):
             mock_proc = AsyncMock()
             mock_proc.returncode = 0
-            mock_proc.communicate = AsyncMock(
-                return_value=(capinfos_output.encode(), b"")
-            )
+            mock_proc.communicate = AsyncMock(return_value=(capinfos_output.encode(), b""))
             with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
                 result = await call(mcp, "get_capture_info", file_path=str(pcap))
 

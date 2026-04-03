@@ -43,9 +43,7 @@ def mock_tshark():
                 }
             ]
         )
-        tshark.protocol_stats = AsyncMock(
-            return_value={"tcp": {"frames": 100, "bytes": 12000}}
-        )
+        tshark.protocol_stats = AsyncMock(return_value={"tcp": {"frames": 100, "bytes": 12000}})
         tshark.export_fields = AsyncMock(return_value=[])
         tshark.follow_stream = AsyncMock(return_value="GET / HTTP/1.1\r\n")
         tshark.list_streams = AsyncMock(return_value=[{"endpoint_a": "a:80"}])
@@ -86,9 +84,7 @@ class TestDnsAnalysis:
 
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "analyze_dns_traffic", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("analyze_dns_traffic", {"filepath": str(pcap)})
         text = _get_text(result)
         assert "DNS Analysis" in text
 
@@ -115,9 +111,7 @@ class TestDnsAnalysis:
 
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "analyze_dns_traffic", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("analyze_dns_traffic", {"filepath": str(pcap)})
         text = _get_text(result)
         assert "potential_tunneling" in text
         assert "true" in text.lower()
@@ -143,9 +137,7 @@ class TestDnsAnalysis:
 
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "analyze_dns_traffic", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("analyze_dns_traffic", {"filepath": str(pcap)})
         text = _get_text(result)
         assert '"nxdomain_count": 2' in text
 
@@ -222,9 +214,7 @@ class TestExpertInfo:
 
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "get_expert_info", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("get_expert_info", {"filepath": str(pcap)})
         text = _get_text(result)
         assert "Expert Information" in text
         assert "Malformed packet" in text
@@ -238,9 +228,7 @@ class TestExpertInfo:
         pcap = tmp_path / "empty_expert.pcap"
         pcap.write_bytes(b"fake pcap" * 100)
 
-        mock_tshark._run = AsyncMock(
-            return_value=MagicMock(returncode=0, stdout="", stderr="")
-        )
+        mock_tshark._run = AsyncMock(return_value=MagicMock(returncode=0, stdout="", stderr=""))
 
         from mcp.server.fastmcp import FastMCP
 
@@ -249,9 +237,7 @@ class TestExpertInfo:
 
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "get_expert_info", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("get_expert_info", {"filepath": str(pcap)})
         text = _get_text(result)
         assert "Expert Information" in text
         assert '"error_count": 0' in text
@@ -300,9 +286,7 @@ class TestExpertInfo:
 
         register_analysis_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "get_expert_info", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("get_expert_info", {"filepath": str(pcap)})
         text = _get_text(result)
         assert '"error_count": 3' in text
         assert '"warning_count": 2' in text
@@ -420,9 +404,7 @@ class TestStreamingAnalysis:
 
         register_streaming_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "analyze_large_pcap", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("analyze_large_pcap", {"filepath": str(pcap)})
         text = _get_text(result)
         assert '"total_packets": 0' in text
 
@@ -504,9 +486,7 @@ class TestStreamingAnalysis:
 
         register_streaming_tools(mcp, mock_tshark, fmt, sec)
 
-        result = await mcp._tool_manager.call_tool(
-            "analyze_large_pcap", {"filepath": str(pcap)}
-        )
+        result = await mcp._tool_manager.call_tool("analyze_large_pcap", {"filepath": str(pcap)})
         text = _get_text(result)
         # tcp should appear twice (in both packets)
         assert "tcp" in text
@@ -567,11 +547,16 @@ class TestCliArgs:
         """Test all args together."""
         from netmcp.server import parse_args
 
-        args = parse_args([
-            "--transport", "streamable-http",
-            "--host", "localhost",
-            "--port", "3000",
-        ])
+        args = parse_args(
+            [
+                "--transport",
+                "streamable-http",
+                "--host",
+                "localhost",
+                "--port",
+                "3000",
+            ]
+        )
         assert args.transport == "streamable-http"
         assert args.host == "localhost"
         assert args.port == 3000
@@ -629,8 +614,6 @@ class TestServerTransport:
             patch("netmcp.server.parse_args") as mock_parse,
             patch("netmcp.server.create_server", return_value=mock_server) as mock_create,
         ):
-            mock_parse.return_value = MagicMock(
-                transport="sse", host="localhost", port=3000
-            )
+            mock_parse.return_value = MagicMock(transport="sse", host="localhost", port=3000)
             main()
             mock_create.assert_called_once_with(host="localhost", port=3000)
