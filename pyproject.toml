@@ -89,6 +89,7 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=netmcp --cov-report=html --cov-report=term"
+markers = ["benchmark: performance benchmarks"]
 
 [tool.coverage.run]
 source = ["src/netmcp"]
