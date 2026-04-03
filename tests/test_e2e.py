@@ -60,7 +60,7 @@ class TestSecurityValidator:
         from netmcp.core.security import SecurityValidator
         sec = SecurityValidator()
 
-        with pytest.raises(ValueError, match="dangerous characters|shell metacharacters"):
+        with pytest.raises(ValueError, match=r"dangerous characters|shell metacharacters"):
             sec.validate_target("; rm -rf /")
 
         with pytest.raises(ValueError, match="Path traversal"):

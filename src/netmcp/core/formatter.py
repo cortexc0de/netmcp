@@ -2,14 +2,14 @@
 
 import json
 import subprocess
-from typing import Any
+from typing import Any, ClassVar
 
 
 class OutputFormatter:
     """Standardized output formatting for MCP responses."""
 
     # Error code mapping
-    _ERROR_CODES = {
+    _ERROR_CODES: ClassVar[dict[type[Exception], str]] = {
         ValueError: "NETMCP_002",
         FileNotFoundError: "NETMCP_004",
         TimeoutError: "NETMCP_005",
@@ -25,7 +25,7 @@ class OutputFormatter:
         try:
             return json.dumps(data, indent=2, default=str)
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Data is not JSON serializable: {e}")
+            raise ValueError(f"Data is not JSON serializable: {e}") from e
 
     def format_text(self, data: Any, title: str = "") -> str:
         """Format data as human-readable text."""

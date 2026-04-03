@@ -1,6 +1,6 @@
 """MCP Resources for NetMCP."""
 
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.fastmcp import FastMCP
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.interfaces.nmap import NmapInterface
@@ -37,7 +37,6 @@ def register_resources(
     @mcp.resource("netmcp://captures")
     def get_captures() -> str:
         """List available PCAP files in common directories."""
-        import os
         from pathlib import Path
 
         search_dirs = [

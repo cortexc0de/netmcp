@@ -129,9 +129,9 @@ class TsharkInterface:
                 stderr=result.stderr or "",
             )
         except subprocess.TimeoutExpired as e:
-            raise TimeoutError(f"TShark command timed out after {timeout}s: {e}")
+            raise TimeoutError(f"TShark command timed out after {timeout}s: {e}") from e
         except FileNotFoundError as e:
-            raise TsharkNotFoundError(f"TShark binary not found at {self.tshark_path}: {e}")
+            raise TsharkNotFoundError(f"TShark binary not found at {self.tshark_path}: {e}") from e
 
     # ── Network interfaces ──────────────────────────────────────────────
 
@@ -408,7 +408,7 @@ class TsharkInterface:
                 stderr=result.stderr or "",
             )
         except subprocess.TimeoutExpired:
-            raise TimeoutError(f"Command timed out: {cmd}")
+            raise TimeoutError(f"Command timed out: {cmd}") from None
 
     @staticmethod
     def _parse_capinfos(text: str) -> dict[str, str]:

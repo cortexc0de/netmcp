@@ -14,7 +14,7 @@ def register_stream_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
     async def follow_tcp_stream(
         filepath: str,
         stream_index: int = 0,
-        format: str = "ascii",
+        output_format: str = "ascii",
     ) -> dict:
         """
         Reconstruct a TCP conversation from a PCAP file.
@@ -26,7 +26,7 @@ def register_stream_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
-            stream = await tshark.follow_stream(str(validated_path), stream_index, "tcp", format)
+            stream = await tshark.follow_stream(str(validated_path), stream_index, "tcp", output_format)
             return fmt.format_success(
                 {"filepath": str(validated_path), "stream_index": stream_index, "content": stream},
                 title=f"TCP Stream #{stream_index}",
@@ -38,7 +38,7 @@ def register_stream_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
     async def follow_udp_stream(
         filepath: str,
         stream_index: int = 0,
-        format: str = "ascii",
+        output_format: str = "ascii",
     ) -> dict:
         """
         Reconstruct a UDP conversation from a PCAP file.
@@ -46,11 +46,11 @@ def register_stream_tools(mcp: FastMCP, tshark: TsharkInterface, fmt: OutputForm
         Args:
             filepath: Path to PCAP/PCAPNG file
             stream_index: Index of the UDP stream to follow (0-based)
-            format: Output format: ascii, hex, or raw
+            output_format: Output format: ascii, hex, or raw
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
-            stream = await tshark.follow_stream(str(validated_path), stream_index, "udp", format)
+            stream = await tshark.follow_stream(str(validated_path), stream_index, "udp", output_format)
             return fmt.format_success(
                 {"filepath": str(validated_path), "stream_index": stream_index, "content": stream},
                 title=f"UDP Stream #{stream_index}",

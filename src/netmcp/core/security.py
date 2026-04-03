@@ -91,14 +91,14 @@ class SecurityValidator:
                 try:
                     lo, hi = int(tokens[0]), int(tokens[1])
                 except ValueError:
-                    raise ValueError(f"Invalid port range (non-numeric): {part!r}")
+                    raise ValueError(f"Invalid port range (non-numeric): {part!r}") from None
                 if lo < 1 or hi > 65535 or lo > hi:
                     raise ValueError(f"Invalid port range: {part!r}")
             else:
                 try:
                     port = int(part)
                 except ValueError:
-                    raise ValueError(f"Invalid port (non-numeric): {part!r}")
+                    raise ValueError(f"Invalid port (non-numeric): {part!r}") from None
                 if port < 1 or port > 65535:
                     raise ValueError(f"Invalid port number: {port}")
 
@@ -138,7 +138,7 @@ class SecurityValidator:
         try:
             resolved = p.resolve(strict=False)
         except (OSError, ValueError):
-            raise ValueError(f"Invalid file path: {path!r}")
+            raise ValueError(f"Invalid file path: {path!r}") from None
 
         # Check for path traversal attempts in original string
         if ".." in str(p).split(os.sep):
