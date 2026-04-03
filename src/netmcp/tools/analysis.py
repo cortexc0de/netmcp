@@ -22,7 +22,6 @@ def register_analysis_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def analyze_pcap_file(
         filepath: str,
         display_filter: str = "",
@@ -75,7 +74,6 @@ def register_analysis_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def get_protocol_statistics(filepath: str) -> dict:
         """
         Get protocol hierarchy statistics from a PCAP file.
@@ -106,7 +104,6 @@ def register_analysis_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def get_capture_file_info(filepath: str) -> dict:
         """
         Get metadata about a PCAP capture file.
@@ -121,7 +118,15 @@ def register_analysis_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Capture Targeted Traffic",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def capture_targeted_traffic(
         interface: str,
         target_host: str = "",
@@ -153,6 +158,12 @@ def register_analysis_tools(
                 sec.validate_port_range(str(target_port))
                 filter_parts.append(f"port {target_port}")
             if protocol:
+                _ALLOWED_PROTOCOLS = {"tcp", "udp", "icmp", "arp", "ip", "ip6", "http", "https"}
+                if protocol.lower() not in _ALLOWED_PROTOCOLS:
+                    raise ValueError(
+                        f"Invalid protocol: {protocol!r}. "
+                        f"Allowed: {', '.join(sorted(_ALLOWED_PROTOCOLS))}"
+                    )
                 if protocol.lower() in ("http", "https"):
                     filter_parts.append(f"tcp port {80 if protocol.lower() == 'http' else 443}")
                 else:
@@ -167,16 +178,23 @@ def register_analysis_tools(
                 timeout=float(duration),
             )
 
-            packets = await tshark.read_pcap(str(pcap_path))
-            result = {
-                "interface": interface,
-                "filter": bpf,
-                "duration": duration,
-                "packets_captured": len(packets),
-                "pcap_file": str(pcap_path),
-                "packets": packets[:50],
-            }
-            return fmt.format_success(result, title="Targeted Capture")
+            try:
+                packets = await tshark.read_pcap(str(pcap_path))
+                result = {
+                    "interface": interface,
+                    "filter": bpf,
+                    "duration": duration,
+                    "packets_captured": len(packets),
+                    "pcap_file": str(pcap_path),
+                    "packets": packets[:50],
+                }
+                return fmt.format_success(result, title="Targeted Capture")
+            finally:
+                import os
+                try:
+                    os.unlink(str(pcap_path))
+                except OSError:
+                    pass
         except Exception as e:
             return fmt.format_error(e)
 
@@ -189,7 +207,6 @@ def register_analysis_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def analyze_http_traffic(filepath: str) -> dict:
         """
         Analyze HTTP traffic from a PCAP file.
@@ -255,7 +272,6 @@ def register_analysis_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def detect_network_protocols(
         filepath: str = "",
         interface: str = "",
@@ -281,7 +297,14 @@ def register_analysis_tools(
                     packet_count=200,
                     timeout=float(duration),
                 )
-                stats = await tshark.protocol_stats(str(pcap_path))
+                try:
+                    stats = await tshark.protocol_stats(str(pcap_path))
+                finally:
+                    import os
+                    try:
+                        os.unlink(str(pcap_path))
+                    except OSError:
+                        pass
                 source = f"live capture on {interface}"
             else:
                 return fmt.format_error(
@@ -313,7 +336,6 @@ def register_analysis_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def analyze_http_headers(
         filepath: str,
         include_cookies: bool = True,
@@ -430,7 +452,6 @@ def register_analysis_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def geoip_lookup(
         ip_addresses: str,
         filepath: str = "",

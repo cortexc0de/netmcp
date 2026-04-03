@@ -1,6 +1,7 @@
 """GeoIP enrichment for IP addresses using MaxMind GeoLite2."""
 
 import asyncio
+import concurrent.futures
 import functools
 
 try:
@@ -10,15 +11,20 @@ try:
 except ImportError:
     _GEOLITE_AVAILABLE = False
 
+import threading
+
 # Module-level singleton to avoid reopening database
 _reader: object | None = None
+_reader_lock = threading.Lock()
 
 
 def _get_reader():
-    """Get or create the GeoIP reader singleton."""
+    """Get or create the GeoIP reader singleton (thread-safe)."""
     global _reader
     if _reader is None and _GEOLITE_AVAILABLE:
-        _reader = geolite2.reader()
+        with _reader_lock:
+            if _reader is None:
+                _reader = geolite2.reader()
     return _reader
 
 
@@ -65,9 +71,15 @@ def lookup_ip(ip: str) -> dict:
         return {"ip": ip, "error": str(e)}
 
 
+# Bounded thread pool for GeoIP lookups
+_geoip_executor = concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="geoip")
+
+
 async def enrich_ips(ip_list: list[str]) -> list[dict]:
     """
     Enrich a list of IPs with GeoIP data concurrently.
+
+    Uses a bounded thread pool to avoid spawning excessive threads.
 
     Args:
         ip_list: List of IP addresses
@@ -76,5 +88,5 @@ async def enrich_ips(ip_list: list[str]) -> list[dict]:
         List of GeoIP result dicts
     """
     loop = asyncio.get_running_loop()
-    tasks = [loop.run_in_executor(None, lookup_ip, ip) for ip in ip_list]
+    tasks = [loop.run_in_executor(_geoip_executor, lookup_ip, ip) for ip in ip_list]
     return await asyncio.gather(*tasks)

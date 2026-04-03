@@ -5,16 +5,30 @@ import subprocess
 from typing import Any, ClassVar
 
 
+# Standardized error codes
+class ErrorCode:
+    """NetMCP error code constants."""
+    INTERNAL = "NETMCP_001"          # Unexpected internal error
+    VALIDATION = "NETMCP_002"        # Input validation failure
+    TOOL_EXECUTION = "NETMCP_003"    # External tool execution error (tshark, nmap)
+    FILE_ERROR = "NETMCP_004"        # File not found, permission, or format error
+    TIMEOUT = "NETMCP_005"           # Operation timed out
+    RATE_LIMITED = "NETMCP_006"      # Rate limit exceeded
+    PERMISSION = "NETMCP_007"        # Insufficient permissions
+    NOT_AVAILABLE = "NETMCP_008"     # Required tool not installed
+
+
 class OutputFormatter:
     """Standardized output formatting for MCP responses."""
 
     # Error code mapping
     _ERROR_CODES: ClassVar[dict[type[Exception], str]] = {
-        ValueError: "NETMCP_002",
-        FileNotFoundError: "NETMCP_004",
-        TimeoutError: "NETMCP_005",
-        PermissionError: "NETMCP_007",
-        subprocess.CalledProcessError: "NETMCP_003",
+        ValueError: ErrorCode.VALIDATION,
+        FileNotFoundError: ErrorCode.FILE_ERROR,
+        TimeoutError: ErrorCode.TIMEOUT,
+        PermissionError: ErrorCode.PERMISSION,
+        subprocess.CalledProcessError: ErrorCode.TOOL_EXECUTION,
+        RuntimeError: ErrorCode.INTERNAL,
     }
 
     def format_json(self, data: Any) -> str:

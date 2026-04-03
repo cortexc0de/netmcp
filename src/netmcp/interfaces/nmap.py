@@ -69,21 +69,18 @@ class NmapInterface:
 
         def _scan() -> dict:
             try:
-                scanner.scan(hosts=target, arguments=arguments)
-                return (
-                    dict(scanner.scaninfo())
-                    if hasattr(scanner, "scaninfo")
-                    else scanner.all_hosts()
-                )
+                result = scanner.scan(hosts=target, arguments=arguments)
+                return result if isinstance(result, dict) else {}
             except nmap.PortScannerError as e:
                 raise RuntimeError(f"Nmap scan error: {e}") from e
             except subprocess.SubprocessError as e:
                 raise RuntimeError(f"Nmap subprocess error: {e}") from e
 
         try:
-            await asyncio.wait_for(loop.run_in_executor(None, _scan), timeout=timeout)
-            # Return the full scan result
-            return scanner.scan() if hasattr(scanner, "scan") else {}
+            result = await asyncio.wait_for(
+                loop.run_in_executor(None, _scan), timeout=timeout
+            )
+            return result
         except TimeoutError:
             raise TimeoutError(f"Nmap scan timed out after {timeout}s for {target}") from None
 

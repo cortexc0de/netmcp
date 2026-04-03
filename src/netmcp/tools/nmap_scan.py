@@ -22,7 +22,6 @@ def register_nmap_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def nmap_port_scan(
         target: str,
         ports: str = "",
@@ -41,6 +40,9 @@ def register_nmap_tools(
                 return fmt.format_error(RuntimeError("Nmap not installed"), "NETMCP_003")
 
             sec.validate_target(target)
+            if not sec.check_rate_limit("nmap_scan", max_ops=10, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 10 nmap scans per hour")
+            sec.audit_log("nmap_port_scan", {"target": target, "ports": ports, "scan_type": scan_type})
             if ports:
                 sec.validate_port_range(ports)
             if scan_type not in ("syn", "connect", "udp"):
@@ -62,7 +64,6 @@ def register_nmap_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def nmap_service_detection(target: str, ports: str = "") -> dict:
         """
         Detect service versions on open ports of a target.
@@ -76,6 +77,8 @@ def register_nmap_tools(
                 return fmt.format_error(RuntimeError("Nmap not installed"), "NETMCP_003")
 
             sec.validate_target(target)
+            if not sec.check_rate_limit("nmap_scan", max_ops=10, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 10 nmap scans per hour")
             if ports:
                 sec.validate_port_range(ports)
 
@@ -95,7 +98,6 @@ def register_nmap_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def nmap_os_detection(target: str) -> dict:
         """
         Detect the operating system of a target (requires root/admin).
@@ -108,6 +110,8 @@ def register_nmap_tools(
                 return fmt.format_error(RuntimeError("Nmap not installed"), "NETMCP_003")
 
             sec.validate_target(target)
+            if not sec.check_rate_limit("nmap_scan", max_ops=10, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 10 nmap scans per hour")
             result = await nmap.os_detect(target)
             return fmt.format_success({"target": target, "result": result}, title="OS Detection")
         except Exception as e:
@@ -122,7 +126,6 @@ def register_nmap_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def nmap_vulnerability_scan(target: str, ports: str = "") -> dict:
         """
         Run NSE vulnerability scripts against a target.
@@ -136,6 +139,9 @@ def register_nmap_tools(
                 return fmt.format_error(RuntimeError("Nmap not installed"), "NETMCP_003")
 
             sec.validate_target(target)
+            if not sec.check_rate_limit("nmap_scan", max_ops=10, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 10 nmap scans per hour")
+            sec.audit_log("nmap_vuln_scan", {"target": target, "ports": ports})
             if ports:
                 sec.validate_port_range(ports)
 
@@ -155,7 +161,6 @@ def register_nmap_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def nmap_quick_scan(target: str) -> dict:
         """
         Quick scan of top 100 ports on a target.
@@ -168,6 +173,8 @@ def register_nmap_tools(
                 return fmt.format_error(RuntimeError("Nmap not installed"), "NETMCP_003")
 
             sec.validate_target(target)
+            if not sec.check_rate_limit("nmap_scan", max_ops=10, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 10 nmap scans per hour")
             result = await nmap.quick_scan(target)
             return fmt.format_success({"target": target, "result": result}, title="Quick Scan")
         except Exception as e:
@@ -182,7 +189,6 @@ def register_nmap_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def nmap_comprehensive_scan(target: str) -> dict:
         """
         Full scan: SYN scan, service detection, OS detection, default scripts.
@@ -195,6 +201,9 @@ def register_nmap_tools(
                 return fmt.format_error(RuntimeError("Nmap not installed"), "NETMCP_003")
 
             sec.validate_target(target)
+            if not sec.check_rate_limit("nmap_scan", max_ops=10, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 10 nmap scans per hour")
+            sec.audit_log("nmap_comprehensive_scan", {"target": target})
             result = await nmap.comprehensive_scan(target)
             return fmt.format_success(
                 {"target": target, "result": result}, title="Comprehensive Scan"

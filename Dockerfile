@@ -32,8 +32,8 @@ RUN groupadd -r netmcp && useradd -r -g netmcp -d /home/netmcp -s /sbin/nologin 
 
 # Install netmcp package
 COPY --from=builder /install /usr/local
-RUN pip install --no-cache-dir netmcp 2>/dev/null || \
-    pip install --no-cache-dir /build/dist/*.whl 2>/dev/null || true
+COPY --from=builder /build/dist/*.whl /tmp/
+RUN pip install --no-cache-dir /tmp/*.whl && rm -f /tmp/*.whl
 
 WORKDIR /home/netmcp
 USER netmcp

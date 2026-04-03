@@ -119,19 +119,18 @@ class TsharkInterface:
                         cmd,
                         capture_output=capture_output,
                         text=True,
-                        timeout=timeout,
                         shell=False,  # Security: never use shell
                     ),
                 ),
-                timeout=timeout + 5,  # Extra buffer for asyncio
+                timeout=timeout,
             )
             return TsharkResult(
                 returncode=result.returncode,
                 stdout=result.stdout or "",
                 stderr=result.stderr or "",
             )
-        except subprocess.TimeoutExpired as e:
-            raise TimeoutError(f"TShark command timed out after {timeout}s: {e}") from e
+        except asyncio.TimeoutError:
+            raise TimeoutError(f"TShark command timed out after {timeout}s") from None
         except FileNotFoundError as e:
             raise TsharkNotFoundError(f"TShark binary not found at {self.tshark_path}: {e}") from e
 
@@ -272,30 +271,49 @@ class TsharkInterface:
 
     @staticmethod
     def _parse_protocol_stats(text: str) -> dict[str, dict]:
-        """Parse tshark -z io,phs output into a dict."""
+        """Parse tshark -z io,phs output into a dict.
+
+        Handles multiple tshark output formats across versions.
+        """
         stats = {}
         for line in text.split("\n"):
             line = line.strip()
             if not line or line.startswith("=") or line.startswith("Filter"):
                 continue
+            if line.startswith("Protocol"):
+                continue
 
-            # Match lines like: "eth                                    frames:100 bytes:12000"
+            # Format 1: "eth  frames:100 bytes:12000"
             match = re.match(
-                r"^(\S+)\s+frames:(\d+)\s+bytes:(\d+(?:\.\d+\s*\w+)?)",
+                r"^(\S+)\s+frames:\s*(\d+)\s+bytes:\s*(\S+)",
                 line,
             )
             if match:
-                proto, frames, bytes_str = match.groups()
-                # Parse bytes (handle "12000", "12.5 kB", etc.)
+                proto, frames_str, bytes_str = match.groups()
                 try:
-                    bytes_val = int(bytes_str.split()[0])
+                    frames = int(frames_str)
+                except ValueError:
+                    frames = 0
+                try:
+                    # Handle "12000", "12.5kB", "12.5 kB"
+                    bytes_val = int(re.sub(r"[^\d]", "", bytes_str.split(".")[0]) or "0")
                 except (ValueError, IndexError):
                     bytes_val = 0
 
-                stats[proto] = {
-                    "frames": int(frames),
-                    "bytes": bytes_val,
-                }
+                stats[proto] = {"frames": frames, "bytes": bytes_val}
+                continue
+
+            # Format 2 (tab-separated): "eth\t100\t12000"
+            parts = line.split("\t")
+            if len(parts) >= 3:
+                try:
+                    stats[parts[0].strip()] = {
+                        "frames": int(parts[1].strip()),
+                        "bytes": int(parts[2].strip()),
+                    }
+                except (ValueError, IndexError):
+                    pass
+
         return stats
 
     # ── Stream following ────────────────────────────────────────────────
@@ -318,6 +336,13 @@ class TsharkInterface:
         Returns:
             Stream content as string
         """
+        _ALLOWED_PROTOS = {"tcp", "udp"}
+        _ALLOWED_FMTS = {"ascii", "hex", "raw"}
+        if proto not in _ALLOWED_PROTOS:
+            raise ValueError(f"Invalid protocol: {proto!r}. Allowed: {', '.join(sorted(_ALLOWED_PROTOS))}")
+        if fmt not in _ALLOWED_FMTS:
+            raise ValueError(f"Invalid format: {fmt!r}. Allowed: {', '.join(sorted(_ALLOWED_FMTS))}")
+
         result = await self._run(
             [
                 "-r",
@@ -405,17 +430,17 @@ class TsharkInterface:
                 loop.run_in_executor(
                     None,
                     lambda: subprocess.run(
-                        cmd, capture_output=True, text=True, timeout=timeout, shell=False
+                        cmd, capture_output=True, text=True, shell=False
                     ),
                 ),
-                timeout=timeout + 5,
+                timeout=timeout,
             )
             return TsharkResult(
                 returncode=result.returncode,
                 stdout=result.stdout or "",
                 stderr=result.stderr or "",
             )
-        except subprocess.TimeoutExpired:
+        except asyncio.TimeoutError:
             raise TimeoutError(f"Command timed out: {cmd}") from None
 
     @staticmethod
@@ -438,6 +463,27 @@ class TsharkInterface:
     ) -> list[dict]:
         """Export packets from PCAP as JSON."""
         return await self.read_pcap(filepath, display_filter, max_packets)
+
+    async def convert_format(
+        self,
+        input_path: str,
+        output_path: str,
+        timeout: float = 60.0,
+    ) -> TsharkResult:
+        """Convert a PCAP file between formats.
+
+        Args:
+            input_path: Source PCAP file path
+            output_path: Destination file path
+            timeout: Max conversion time
+
+        Returns:
+            TsharkResult with operation status
+        """
+        return await self._run(
+            ["-r", input_path, "-w", output_path],
+            timeout=timeout,
+        )
 
     async def export_fields(
         self,

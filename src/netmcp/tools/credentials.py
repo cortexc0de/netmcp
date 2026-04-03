@@ -24,7 +24,6 @@ def register_credential_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def extract_credentials(filepath: str) -> dict:
         """
         Extract potential credentials from a PCAP file.
@@ -40,6 +39,7 @@ def register_credential_tools(
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
+            sec.audit_log("extract_credentials", {"filepath": str(validated_path)})
             pcap = str(validated_path)
 
             # Extract plaintext creds

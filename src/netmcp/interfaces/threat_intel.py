@@ -17,6 +17,7 @@ ABUSEIPDB_API_URL = "https://api.abuseipdb.com/api/v2/check"
 
 # Cache TTL (1 hour)
 CACHE_TTL = 3600
+CACHE_MAX_SIZE = 10000
 
 # Threat score threshold (0-100)
 THREAT_THRESHOLD = 50
@@ -71,7 +72,15 @@ class ThreatIntelInterface:
         return None
 
     def _set_cache(self, key: str, data: Any) -> None:
-        """Store result in cache."""
+        """Store result in cache with LRU eviction."""
+        if len(self._cache) >= CACHE_MAX_SIZE:
+            # Evict oldest entries (by timestamp)
+            sorted_keys = sorted(
+                self._cache.keys(),
+                key=lambda k: self._cache[k].timestamp,
+            )
+            for old_key in sorted_keys[: len(sorted_keys) // 4]:
+                del self._cache[old_key]
         self._cache[key] = CacheEntry(data=data, timestamp=time.monotonic())
 
     # ── URLhaus ─────────────────────────────────────────────────────────
@@ -108,7 +117,15 @@ class ThreatIntelInterface:
             return cached
 
         try:
-            malicious_ips = await self._fetch_urlhaus()
+            # Cache the feed globally to avoid re-downloading per IP
+            if (
+                self._urlhaus_ips is None
+                or (time.monotonic() - self._urlhaus_ips.timestamp) >= self.cache_ttl
+            ):
+                feed_ips = await self._fetch_urlhaus()
+                self._urlhaus_ips = CacheEntry(data=feed_ips, timestamp=time.monotonic())
+
+            malicious_ips = self._urlhaus_ips.data
             is_threat = ip in malicious_ips
             result = {
                 "provider": "urlhaus",

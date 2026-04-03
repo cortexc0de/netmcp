@@ -27,7 +27,6 @@ def register_threat_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def check_ip_threat_intel(
         ip_address: str,
         providers: str = "urlhaus,abuseipdb",
@@ -41,6 +40,8 @@ def register_threat_tools(
         """
         try:
             sec.validate_target(ip_address)
+            if not sec.check_rate_limit("threat_intel", max_ops=100, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 100 threat intel checks per hour")
             provider_list = [p.strip() for p in providers.split(",") if p.strip()]
 
             result = await threat.check_ip(ip_address, provider_list or None)
@@ -57,7 +58,6 @@ def register_threat_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def scan_capture_for_threats(
         filepath: str,
         providers: str = "urlhaus,abuseipdb",
@@ -71,6 +71,8 @@ def register_threat_tools(
         """
         try:
             validated_path = sec.sanitize_filepath(filepath)
+            if not sec.check_rate_limit("threat_scan", max_ops=10, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 10 threat scans per hour")
             provider_list = [p.strip() for p in providers.split(",") if p.strip()]
 
             result = await threat.scan_pcap(str(validated_path), tshark, provider_list or None)

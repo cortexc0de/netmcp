@@ -58,6 +58,9 @@ def register_capture_tools(
         """
         try:
             sec.validate_interface(interface)
+            if not sec.check_rate_limit("live_capture", max_ops=30, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 30 live captures per hour")
+            sec.audit_log("capture_live", {"interface": interface, "duration": duration})
             sec.validate_capture_filter(bpf_filter)
 
             pcap_path = await tshark.capture_live(
@@ -193,6 +196,9 @@ def register_capture_tools(
         """
         try:
             sec.validate_interface(interface)
+            if not sec.check_rate_limit("live_capture", max_ops=30, window_seconds=3600):
+                raise RuntimeError("Rate limit exceeded: max 30 live captures per hour")
+            sec.audit_log("save_capture", {"interface": interface, "output_file": output_file})
             sec.validate_capture_filter(bpf_filter)
 
             pcap_path = await tshark.capture_live(
@@ -202,13 +208,28 @@ def register_capture_tools(
                 timeout=float(duration),
             )
 
-            # Copy to user-specified path
             import shutil
             from pathlib import Path
 
             dest = Path(output_file)
             if not dest.is_absolute():
                 dest = Path.cwd() / dest
+
+            # Security: validate output path
+            try:
+                dest = dest.resolve(strict=False)
+            except (OSError, ValueError):
+                raise ValueError(f"Invalid output path: {output_file!r}") from None
+
+            if ".." in Path(output_file).parts:
+                raise ValueError(f"Path traversal not allowed in output: {output_file!r}")
+
+            allowed_ext = {".pcap", ".pcapng", ".cap"}
+            if dest.suffix.lower() not in allowed_ext:
+                raise ValueError(
+                    f"Invalid output extension: {dest.suffix!r}. Allowed: {', '.join(sorted(allowed_ext))}"
+                )
+
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(pcap_path), str(dest))
 

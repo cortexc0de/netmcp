@@ -2,6 +2,7 @@
 
 import csv
 import io
+import re
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -9,6 +10,8 @@ from mcp.types import ToolAnnotations
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
 from netmcp.interfaces.tshark import TsharkInterface
+
+_TSHARK_FIELD_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_.]{0,127}$")
 
 _DEFAULT_EXPORT_FIELDS = [
     "frame.number",
@@ -38,7 +41,6 @@ def register_export_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def export_packets_json(
         filepath: str,
         display_filter: str = "",
@@ -75,7 +77,6 @@ def register_export_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def export_packets_csv(
         filepath: str,
         fields: str = "",
@@ -94,6 +95,9 @@ def register_export_tools(
             field_list = (
                 [f.strip() for f in fields.split(",")] if fields else _DEFAULT_EXPORT_FIELDS
             )
+            for field_name in field_list:
+                if not _TSHARK_FIELD_RE.match(field_name):
+                    raise ValueError(f"Invalid tshark field name: {field_name!r}")
             rows = await tshark.export_fields(str(validated_path), field_list, display_filter)
 
             # Convert to CSV string
@@ -120,7 +124,6 @@ def register_export_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def convert_pcap_format(
         filepath: str,
         output_format: str = "pcapng",
@@ -137,12 +140,13 @@ def register_export_tools(
             if output_format not in ("pcap", "pcapng"):
                 raise ValueError("output_format must be 'pcap' or 'pcapng'")
 
-            output_path = str(validated_path) + f".{output_format}"
+            output_path = str(validated_path.with_suffix(f".{output_format}"))
 
-            await tshark._run(
-                ["-r", str(validated_path), "-w", output_path],
-                timeout=60.0,
+            result = await tshark.convert_format(
+                str(validated_path), output_path, timeout=60.0
             )
+            if result.returncode != 0:
+                raise RuntimeError(f"Format conversion failed: {result.stderr}")
 
             return fmt.format_success(
                 {"input": str(validated_path), "output": output_path, "format": output_format},

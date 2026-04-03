@@ -1,9 +1,12 @@
 """Security validation, sanitization, and rate limiting for NetMCP."""
 
+import logging
 import os
 import re
 import threading
 import time
+
+logger = logging.getLogger("netmcp.security")
 from ipaddress import AddressValueError, NetmaskValueError, ip_address, ip_network
 from pathlib import Path
 
@@ -146,6 +149,10 @@ class SecurityValidator:
         if ".." in str(p).split(os.sep):
             raise ValueError(f"Path traversal not allowed: {path!r}")
 
+        # Reject symbolic links (could bypass directory restrictions)
+        if p.is_symlink():
+            raise ValueError(f"Symbolic links not allowed: {path!r}")
+
         # Check extension
         ext = resolved.suffix.lower()
         if ext not in _ALLOWED_EXTENSIONS:
@@ -201,6 +208,22 @@ class SecurityValidator:
 
     # ── Privilege detection ───────────────────────────────────────────
 
+    # ── Audit logging ─────────────────────────────────────────────────
+
+    @staticmethod
+    def audit_log(operation: str, details: dict | None = None) -> None:
+        """Log a security-relevant operation for audit purposes.
+
+        Args:
+            operation: Name of the operation (e.g., 'nmap_scan', 'capture_live')
+            details: Optional dict with operation parameters
+        """
+        msg = f"AUDIT: {operation}"
+        if details:
+            safe_details = {k: v for k, v in details.items() if k not in ("password", "secret", "key", "token")}
+            msg += f" | {safe_details}"
+        logger.info(msg)
+
     def is_privileged(self) -> bool:
         """Check if the process is running with elevated privileges."""
         if os.name == "nt":
@@ -215,3 +238,64 @@ class SecurityValidator:
                 return os.getuid() == 0
             except AttributeError:
                 return False
+
+    # ── Nmap flags validation ─────────────────────────────────────────
+
+    _ALLOWED_NMAP_FLAGS = {
+        "-sT", "-sS", "-sU", "-sV", "-sC", "-O", "-F", "-A",
+        "-T0", "-T1", "-T2", "-T3", "-T4", "-T5",
+        "--version-all", "--osscan-guess", "--open",
+    }
+    _DANGEROUS_NMAP_PATTERNS = {
+        "--script-args", "--script-updatedb", "--datadir",
+        "--servicedb", "--versiondb", "--send-eth",
+        "--send-ip", "--privileged", "--release-memory",
+        "--interactive", "--packet-trace",
+    }
+
+    def validate_nmap_arguments(self, arguments: str) -> str:
+        """Validate nmap arguments against allowed flags.
+
+        Args:
+            arguments: Nmap argument string (e.g. "-sT -T4 -p 80,443")
+
+        Returns:
+            Validated arguments string.
+
+        Raises:
+            ValueError: If dangerous or unknown flags are found.
+        """
+        if not arguments:
+            return ""
+
+        import shlex
+        try:
+            tokens = shlex.split(arguments)
+        except ValueError:
+            raise ValueError(f"Malformed nmap arguments: {arguments!r}") from None
+
+        for token in tokens:
+            # Skip port specs and target-like args
+            if not token.startswith("-"):
+                continue
+
+            # Check for dangerous patterns
+            for dangerous in self._DANGEROUS_NMAP_PATTERNS:
+                if token.startswith(dangerous):
+                    raise ValueError(f"Dangerous nmap flag not allowed: {token!r}")
+
+            # Extract the flag (handle -p80 style)
+            flag = token.split("=")[0] if "=" in token else token
+            # Allow -p (port spec) and --script with known scripts
+            if flag in ("-p", "--script"):
+                if flag == "--script":
+                    # Only allow 'vuln' and 'default' script categories
+                    script_val = token.split("=", 1)[1] if "=" in token else ""
+                    if script_val and script_val not in ("vuln", "default", "safe"):
+                        raise ValueError(f"Nmap script not in allowed list: {script_val!r}")
+                continue
+
+            if flag not in self._ALLOWED_NMAP_FLAGS:
+                raise ValueError(f"Nmap flag not in allowed list: {flag!r}")
+
+        return arguments

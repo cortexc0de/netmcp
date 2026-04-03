@@ -22,7 +22,6 @@ def register_stream_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def follow_tcp_stream(
         filepath: str,
         stream_index: int = 0,
@@ -57,7 +56,6 @@ def register_stream_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def follow_udp_stream(
         filepath: str,
         stream_index: int = 0,
@@ -92,7 +90,6 @@ def register_stream_tools(
             openWorldHint=True,
         )
     )
-    @mcp.tool()
     async def list_tcp_streams(filepath: str) -> dict:
         """
         List all TCP conversations found in a PCAP file.
