@@ -1,6 +1,7 @@
 """PCAP analysis tools."""
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
@@ -12,6 +13,15 @@ def register_analysis_tools(
 ) -> None:
     """Register analysis-related MCP tools."""
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Analyze Pcap File",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def analyze_pcap_file(
         filepath: str,
@@ -56,6 +66,15 @@ def register_analysis_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004" if isinstance(e, ValueError) else "NETMCP_003")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get Protocol Statistics",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def get_protocol_statistics(filepath: str) -> dict:
         """
@@ -78,6 +97,15 @@ def register_analysis_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get Capture File Info",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def get_capture_file_info(filepath: str) -> dict:
         """
@@ -152,6 +180,15 @@ def register_analysis_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Analyze Http Traffic",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def analyze_http_traffic(filepath: str) -> dict:
         """
@@ -209,6 +246,15 @@ def register_analysis_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Detect Network Protocols",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def detect_network_protocols(
         filepath: str = "",
@@ -258,6 +304,15 @@ def register_analysis_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Analyze Http Headers",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def analyze_http_headers(
         filepath: str,
@@ -366,6 +421,15 @@ def register_analysis_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Geoip Lookup",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def geoip_lookup(
         ip_addresses: str,

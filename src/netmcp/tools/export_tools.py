@@ -4,6 +4,7 @@ import csv
 import io
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
@@ -28,6 +29,15 @@ def register_export_tools(
 ) -> None:
     """Register export-related MCP tools."""
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Export Packets Json",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def export_packets_json(
         filepath: str,
@@ -56,6 +66,15 @@ def register_export_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Export Packets Csv",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def export_packets_csv(
         filepath: str,
@@ -92,6 +111,15 @@ def register_export_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Convert Pcap Format",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def convert_pcap_format(
         filepath: str,

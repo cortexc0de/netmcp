@@ -1,6 +1,7 @@
 """Nmap scanning tools."""
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
@@ -12,6 +13,15 @@ def register_nmap_tools(
 ) -> None:
     """Register nmap-related MCP tools."""
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Nmap Port Scan",
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def nmap_port_scan(
         target: str,
@@ -43,6 +53,15 @@ def register_nmap_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_002")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Nmap Service Detection",
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def nmap_service_detection(target: str, ports: str = "") -> dict:
         """
@@ -67,6 +86,15 @@ def register_nmap_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Nmap Os Detection",
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def nmap_os_detection(target: str) -> dict:
         """
@@ -85,6 +113,15 @@ def register_nmap_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Nmap Vulnerability Scan",
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def nmap_vulnerability_scan(target: str, ports: str = "") -> dict:
         """
@@ -109,6 +146,15 @@ def register_nmap_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Nmap Quick Scan",
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def nmap_quick_scan(target: str) -> dict:
         """
@@ -127,6 +173,15 @@ def register_nmap_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Nmap Comprehensive Scan",
+            readOnlyHint=False,
+            destructiveHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def nmap_comprehensive_scan(target: str) -> dict:
         """

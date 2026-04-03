@@ -1,6 +1,7 @@
 """Stream following tools (TCP/UDP conversation reconstruction)."""
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
@@ -12,6 +13,15 @@ def register_stream_tools(
 ) -> None:
     """Register stream-related MCP tools."""
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Follow Tcp Stream",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def follow_tcp_stream(
         filepath: str,
@@ -38,6 +48,15 @@ def register_stream_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Follow Udp Stream",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def follow_udp_stream(
         filepath: str,
@@ -64,6 +83,15 @@ def register_stream_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_004")
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List Tcp Streams",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def list_tcp_streams(filepath: str) -> dict:
         """

@@ -1,6 +1,7 @@
 """Threat intelligence tools."""
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
@@ -17,6 +18,15 @@ def register_threat_tools(
 ) -> None:
     """Register threat-related MCP tools."""
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Check Ip Threat Intel",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def check_ip_threat_intel(
         ip_address: str,
@@ -38,6 +48,15 @@ def register_threat_tools(
         except Exception as e:
             return fmt.format_error(e)
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Scan Capture For Threats",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def scan_capture_for_threats(
         filepath: str,

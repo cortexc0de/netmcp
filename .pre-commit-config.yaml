@@ -1,0 +1,37 @@
+# See https://pre-commit.com for more information
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: .venv/bin/mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+        args: ["src/netmcp/", "--ignore-missing-imports", "--no-error-summary"]
+
+      - id: pytest
+        name: pytest
+        entry: .venv/bin/pytest
+        language: system
+        pass_filenames: false
+        args: ["tests/", "-o", "addopts=", "-q"]

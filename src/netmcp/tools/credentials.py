@@ -3,6 +3,7 @@
 import base64
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
@@ -14,6 +15,15 @@ def register_credential_tools(
 ) -> None:
     """Register credential extraction MCP tools."""
 
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Extract Credentials",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     @mcp.tool()
     async def extract_credentials(filepath: str) -> dict:
         """

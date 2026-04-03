@@ -1,6 +1,7 @@
 """Capture and network interface tools."""
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from netmcp.core.formatter import OutputFormatter
 from netmcp.core.security import SecurityValidator
@@ -12,7 +13,15 @@ def register_capture_tools(
 ) -> None:
     """Register capture-related MCP tools."""
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List Network Interfaces",
+            readOnlyHint=True,
+            destructiveHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
     async def get_network_interfaces() -> dict:
         """List all available network interfaces for packet capture."""
         try:
@@ -23,7 +32,15 @@ def register_capture_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_003")
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Capture Live Packets",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def capture_live_packets(
         interface: str,
         duration: int = 5,
@@ -63,7 +80,15 @@ def register_capture_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_003")
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Quick Capture",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def quick_capture(
         interface: str = "eth0",
         packet_count: int = 10,
@@ -121,7 +146,15 @@ def register_capture_tools(
         except Exception as e:
             return fmt.format_error(e, "NETMCP_003")
 
-    @mcp.tool()
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Save Capture to File",
+            readOnlyHint=False,
+            destructiveHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        )
+    )
     async def save_capture_to_file(
         interface: str,
         output_file: str,
