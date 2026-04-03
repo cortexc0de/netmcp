@@ -102,13 +102,13 @@ class TestCheckIP:
 class TestScanPCAP:
     @pytest.mark.asyncio
     async def test_scan_pcap_threats(self, tmp_path, mock_httpx):
-        # Mock URLhaus response
+        # Mock URLhaus response — use public IPs as threats
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.text = "192.168.1.100\n10.0.0.1\n"
+        mock_response.text = "203.0.113.50\n8.8.8.8\n"
         mock_httpx.return_value.__aenter__.return_value.get.return_value = mock_response
 
-        # Mock tshark to return IPs
+        # Mock tshark to return IPs (mix of private and public)
         mock_pcap = tmp_path / "test.pcap"
         mock_pcap.write_bytes(b"fake pcap")
 
@@ -116,7 +116,7 @@ class TestScanPCAP:
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(
                     returncode=0,
-                    stdout="192.168.1.100\n10.0.0.1\n8.8.8.8\n",
+                    stdout="192.168.1.100\n203.0.113.50\n8.8.8.8\n",
                 )
                 from netmcp.interfaces.tshark import TsharkInterface
 
@@ -126,6 +126,7 @@ class TestScanPCAP:
                 result = await iface.scan_pcap(str(mock_pcap), tshark)
 
                 assert result["total_ips"] == 3
+                assert result["private_ips_skipped"] >= 1
                 assert result["threats_found"] >= 1
 
 

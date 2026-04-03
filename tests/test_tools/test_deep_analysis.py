@@ -244,7 +244,7 @@ class TestGetCaptureInfo:
 
         assert result["isError"] is False
         text = result["content"][0]["text"]
-        assert "Информация о файле захвата" in text  # noqa: RUF001
+        assert "Информация о файле захвата" in text
         assert "Number of packets" in text
         assert "1234" in text
         assert "SHA256" in text

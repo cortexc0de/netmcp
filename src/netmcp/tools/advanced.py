@@ -485,7 +485,7 @@ def register_advanced_tools(
                     info[key.strip()] = val.strip()
 
             # Build formatted markdown
-            lines = ["## Информация о файле захвата\n"]  # noqa: RUF001
+            lines = ["## Информация о файле захвата\n"]
             lines.append("| Параметр | Значение |")
             lines.append("|----------|----------|")
             for key, val in info.items():

@@ -1,4 +1,4 @@
-"""Tests for workflow prompts — covers lines 21, 46, 69, 96, 122 in workflows.py."""
+"""Tests for workflow prompts — covers register_prompts in workflows.py."""
 
 import pytest
 from mcp.server.fastmcp import FastMCP
@@ -28,41 +28,45 @@ def mcp_with_prompts():
 class TestWorkflowPrompts:
     @pytest.mark.asyncio
     async def test_security_audit_prompt(self, mcp_with_prompts):
-        """Line 21: security_audit return."""
+        """security_audit returns Russian workflow text."""
         assert "security_audit" in mcp_with_prompts._prompt_manager._prompts
         result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "security_audit", {"filepath": "/test.pcap"}
+            "security_audit", {}
         )
         text = _get_text(result)
-        assert "security audit" in text.lower()
+        assert "analyze_pcap" in text
+        assert "extract_credentials" in text
 
     @pytest.mark.asyncio
     async def test_network_troubleshooting_prompt(self, mcp_with_prompts):
-        """Line 46: network_troubleshooting return."""
+        """network_troubleshooting returns workflow text."""
         result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "network_troubleshooting", {"interface": "eth0", "duration": "10"}
+            "network_troubleshooting", {}
         )
-        assert "eth0" in _get_text(result)
+        text = _get_text(result)
+        assert "quick_capture" in text
 
     @pytest.mark.asyncio
     async def test_incident_response_prompt(self, mcp_with_prompts):
-        """Line 69: incident_response return."""
+        """incident_response returns workflow text."""
         result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "incident_response", {"target": "10.0.0.1"}
+            "incident_response", {}
         )
-        assert "10.0.0.1" in _get_text(result)
+        text = _get_text(result)
+        assert "check_threat_intelligence" in text
 
     @pytest.mark.asyncio
     async def test_traffic_analysis_prompt(self, mcp_with_prompts):
-        """Line 96: traffic_analysis return."""
+        """traffic_analysis returns workflow text."""
         result = await mcp_with_prompts._prompt_manager.render_prompt(
-            "traffic_analysis", {"filepath": "/data.pcap"}
+            "traffic_analysis", {}
         )
-        assert "/data.pcap" in _get_text(result)
+        text = _get_text(result)
+        assert "analyze_pcap" in text
 
     @pytest.mark.asyncio
     async def test_network_baseline_prompt(self, mcp_with_prompts):
-        """Line 122: network_baseline return."""
+        """network_baseline still accepts params."""
         result = await mcp_with_prompts._prompt_manager.render_prompt(
             "network_baseline", {"interface": "wlan0", "duration": "30"}
         )

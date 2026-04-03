@@ -70,7 +70,7 @@ src = ["src"]
 select = [
     "E", "W", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF",
 ]
-ignore = ["E501", "SIM117", "SIM105"]
+ignore = ["E501", "SIM117", "SIM105", "RUF001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["netmcp"]

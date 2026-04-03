@@ -7,106 +7,127 @@ def register_prompts(mcp: FastMCP) -> None:
     """Register MCP prompts."""
 
     @mcp.prompt()
-    def security_audit(filepath: str) -> str:
-        """
-        Perform a comprehensive security audit of a PCAP file.
+    def security_audit() -> str:
+        """Comprehensive network security audit workflow."""
+        return """# Аудит сетевой безопасности
 
-        Guided workflow:
-        1. Analyze the PCAP file for protocol distribution
-        2. Extract all credentials (HTTP, FTP, Telnet, Kerberos)
-        3. Scan for malicious IPs using threat intelligence
-        4. Identify suspicious patterns (unusual ports, data exfiltration)
-        5. Generate a security report with findings and recommendations
-        """
-        return f"""Perform a comprehensive security audit of the PCAP file: {filepath}
+## Шаг 1: Обзор трафика
+Используйте `analyze_pcap` для общего обзора захваченного трафика.
 
-Step 1: Run get_protocol_statistics to understand the traffic composition
-Step 2: Run extract_credentials to find any exposed credentials
-Step 3: Run scan_capture_for_threats to check for malicious IPs
-Step 4: Run analyze_http_traffic to identify suspicious HTTP activity
-Step 5: Run list_tcp_streams to find unusual connections
+## Шаг 2: Проверка учётных данных
+Используйте `extract_credentials` для поиска утечек паролей в открытом виде.
 
-Provide a detailed security report with:
-- Summary of findings
-- Risk level assessment
-- Specific recommendations for each issue found
-- Indicators of Compromise (IOCs) if any"""
+## Шаг 3: Анализ TLS
+Используйте `analyze_tls_handshake` для проверки версий TLS и шифров.
+Проверьте использование устаревших TLS 1.0/1.1.
 
-    @mcp.prompt()
-    def network_troubleshooting(interface: str = "eth0", duration: int = 10) -> str:
-        """
-        Diagnose network issues through traffic analysis.
+## Шаг 4: DNS-анализ
+Используйте `analyze_dns_traffic` для выявления DNS-туннелирования и подозрительных запросов.
 
-        Guided workflow:
-        1. Capture live traffic on the specified interface
-        2. Analyze protocol distribution
-        3. Identify top talkers and conversations
-        4. Check for packet loss, retransmissions, or anomalies
-        """
-        return f"""Diagnose network issues by analyzing traffic on interface '{interface}' for {duration} seconds.
+## Шаг 5: Проверка угроз
+Используйте `check_threat_intelligence` для проверки IP-адресов по базам угроз.
 
-Step 1: Run capture_live_packets to capture baseline traffic
-Step 2: Run get_protocol_statistics to see protocol breakdown
-Step 3: Identify the most active connections and protocols
-Step 4: Check for anomalies: excessive DNS, retransmissions, unexpected protocols
+## Шаг 6: Экспертная информация
+Используйте `get_expert_info` для просмотра предупреждений Wireshark.
 
-Provide a troubleshooting report with:
-- Current network state summary
-- Potential issues detected
-- Recommendations for improvement"""
+## Шаг 7: Отчёт
+Используйте `generate_report` для создания полного отчёта."""
 
     @mcp.prompt()
-    def incident_response(target: str) -> str:
-        """
-        Investigate a potential security incident.
+    def network_troubleshooting() -> str:
+        """Network troubleshooting workflow."""
+        return """# Диагностика сетевых проблем
 
-        Guided workflow:
-        1. Run nmap scans against the target to identify open ports and services
-        2. Check the target's IP against threat intelligence feeds
-        3. Capture and analyze traffic to/from the target
-        4. Generate an incident report
-        """
-        return f"""Investigate a potential security incident involving: {target}
+## Шаг 1: Захват трафика
+Используйте `quick_capture` или `capture_targeted_traffic` для захвата.
 
-Step 1: Run nmap_quick_scan to identify exposed services
-Step 2: Run check_ip_threat_intel to check threat feeds
-Step 3: If the target is local, run nmap_vulnerability_scan
-Step 4: Run nmap_comprehensive_scan for detailed analysis
-Step 5: Capture traffic with capture_live_packets (filter: 'host {target}')
+## Шаг 2: Обзор протоколов
+Используйте `get_protocol_hierarchy` для общей картины.
 
-Provide an incident response report with:
-- Target profile (open ports, services, OS)
-- Threat intelligence findings
-- Vulnerability assessment
-- Immediate containment recommendations
-- Long-term remediation steps"""
+## Шаг 3: Потоки TCP
+Используйте `visualize_network_flows` для визуализации потоков.
+Проверьте `get_expert_info` на ретрансмиссии и ошибки.
+
+## Шаг 4: Анализ DNS
+Используйте `analyze_dns_traffic` для проверки DNS-разрешения.
+
+## Шаг 5: HTTP-проблемы
+Используйте `analyze_http_traffic` для поиска ошибок (4xx/5xx).
+
+## Шаг 6: Диалоги
+Используйте `get_conversation_stats` для определения нагрузки."""
 
     @mcp.prompt()
-    def traffic_analysis(filepath: str) -> str:
-        """
-        Perform deep traffic analysis with protocol breakdown and GeoIP mapping.
+    def incident_response() -> str:
+        """Incident response investigation workflow."""
+        return """# Расследование инцидента
 
-        Guided workflow:
-        1. Get protocol statistics from the PCAP
-        2. Analyze HTTP traffic for patterns and anomalies
-        3. Extract and analyze HTTP headers (cookies, tokens, auth)
-        4. Look up GeoIP data for all IPs
-        5. Identify unusual patterns or suspicious activity
-        """
-        return f"""Perform a comprehensive traffic analysis of: {filepath}
+## Фаза 1: Идентификация
+Используйте `get_capture_info` для метаданных файла.
+Используйте `analyze_pcap` для первичного обзора.
 
-Step 1: Run get_protocol_statistics for protocol breakdown
-Step 2: Run analyze_http_traffic to understand web activity
-Step 3: Run analyze_http_headers to find cookies, tokens, auth headers
-Step 4: Run geoip_lookup to map all IPs to geographic locations
-Step 5: Run extract_credentials to find any exposed credentials
+## Фаза 2: Анализ IoC
+Используйте `check_threat_intelligence` для проверки IP-адресов.
+Используйте `extract_credentials` для поиска скомпрометированных учётных данных.
 
-Provide a traffic analysis report with:
-- Protocol distribution summary
-- Top communicating endpoints with GeoIP data
-- HTTP activity summary (methods, hosts, status codes)
-- Suspicious patterns or indicators
-- Cookie and token inventory"""
+## Фаза 3: Анализ трафика
+Используйте `deep_packet_analysis` для детального разбора.
+Используйте `follow_tcp_stream` для реконструкции сессий.
+
+## Фаза 4: Извлечение артефактов
+Используйте `extract_objects` для извлечения файлов из трафика.
+Используйте `export_packets_json` для экспорта улик.
+
+## Фаза 5: Хронология
+Используйте `get_io_statistics` для временной шкалы активности.
+Используйте `get_flow_statistics` для анализа потоков.
+
+## Фаза 6: Документирование
+Используйте `generate_report` для создания отчёта об инциденте."""
+
+    @mcp.prompt()
+    def traffic_analysis() -> str:
+        """General traffic analysis workflow."""
+        return """# Анализ сетевого трафика
+
+## Шаг 1: Обзор
+Используйте `analyze_pcap` и `get_protocol_hierarchy`.
+
+## Шаг 2: Статистика
+Используйте `get_io_statistics` для временных графиков.
+Используйте `get_conversation_stats` для топ-соединений.
+
+## Шаг 3: Протоколы
+Используйте `analyze_http_traffic` для HTTP.
+Используйте `analyze_dns_traffic` для DNS.
+
+## Шаг 4: Потоки
+Используйте `visualize_network_flows` для визуализации.
+Используйте `follow_tcp_stream` для содержимого потоков.
+
+## Шаг 5: Безопасность
+Используйте `get_expert_info` для предупреждений.
+Используйте `check_threat_intelligence` для проверки IP."""
+
+    @mcp.prompt()
+    def credential_analysis() -> str:
+        """Credential exposure analysis workflow."""
+        return """# Анализ утечки учётных данных
+
+## Шаг 1: Извлечение
+Используйте `extract_credentials` для поиска учётных данных.
+
+## Шаг 2: TLS проверка
+Используйте `analyze_tls_handshake` для проверки шифрования.
+
+## Шаг 3: HTTP анализ
+Используйте `analyze_http_traffic` для поиска форм авторизации.
+
+## Шаг 4: Проверка угроз
+Используйте `check_threat_intelligence` для проверки целевых IP.
+
+## Шаг 5: Рекомендации
+Оцените масштаб утечки и составьте план реагирования."""
 
     @mcp.prompt()
     def network_baseline(interface: str = "eth0", duration: int = 30) -> str:

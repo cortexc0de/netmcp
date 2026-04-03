@@ -1,6 +1,7 @@
 """Threat intelligence interface for URLhaus and AbuseIPDB."""
 
 import asyncio
+import ipaddress
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -21,6 +22,15 @@ CACHE_MAX_SIZE = 10000
 
 # Threat score threshold (0-100)
 THREAT_THRESHOLD = 50
+
+
+def _is_private_ip(ip_str: str) -> bool:
+    """Check if IP is private/reserved (RFC 1918, loopback, link-local)."""
+    try:
+        addr = ipaddress.ip_address(ip_str)
+        return addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_multicast
+    except ValueError:
+        return False
 
 
 @dataclass
@@ -284,12 +294,16 @@ class ThreatIntelInterface:
                 if val and val not in ("", "unknown"):
                     ips.add(val)
 
+        # Filter out private/reserved IPs
+        public_ips = [ip for ip in ips if not _is_private_ip(ip)]
+        private_count = len(ips) - len(public_ips)
+
         # Check each IP against threat feeds (concurrently, in batches)
         ip_results = {}
         batch_size = 10
 
-        for i in range(0, len(ips), batch_size):
-            batch = list(ips)[i : i + batch_size]
+        for i in range(0, len(public_ips), batch_size):
+            batch = public_ips[i : i + batch_size]
             tasks = [self.check_ip(ip, providers) for ip in batch]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -309,6 +323,8 @@ class ThreatIntelInterface:
         return {
             "filepath": filepath,
             "total_ips": len(ips),
+            "private_ips_skipped": private_count,
+            "public_ips_checked": len(public_ips),
             "threats_found": len(threats),
             "threat_ips": list(threats.keys()),
             "ip_results": ip_results,

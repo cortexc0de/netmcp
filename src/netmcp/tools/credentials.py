@@ -162,12 +162,23 @@ def register_credential_tools(
                     frame = row.get("frame.number", "")
 
                     hash_format = ""
-                    if msg_type in ("10", "30"):  # AS-REQ / TGS-REQ
-                        hash_format = f"$krb5pa$23${cname}${realm}${cipher}"
+                    cracking = ""
+                    if msg_type in ("10", "30"):  # AS-REQ / TGS-REQ pre-auth
+                        hash_format = f"$krb5pa$23${cname}${realm}$*${cipher}"
                         cracking = "hashcat -m 7500"
                     elif msg_type == "11":  # AS-REP
-                        hash_format = f"$krb5asrep$23${cname}@{realm}${cipher}"
+                        hash_format = f"$krb5asrep$23${cname}@{realm}:{cipher}"
                         cracking = "hashcat -m 18200"
+                    elif msg_type == "12":  # TGS-REQ
+                        credentials["encrypted"].append(
+                            {
+                                "type": "Kerberos TGS-REQ",
+                                "username": cname,
+                                "realm": realm,
+                                "frame": frame,
+                                "note": "Service ticket request — potential Kerberoasting target",
+                            }
+                        )
 
                     if hash_format:
                         credentials["encrypted"].append(

@@ -722,7 +722,7 @@ def register_analysis_tools(
 
             if not packets:
                 return fmt.truncate_output(fmt.format_success(
-                    "## Глубокий анализ пакетов\n\nПакеты не найдены.",  # noqa: RUF001
+                    "## Глубокий анализ пакетов\n\nПакеты не найдены.",
                     title="Deep Packet Analysis",
                 ))
 
@@ -846,7 +846,7 @@ def register_analysis_tools(
             lines.append("### Сводка")
             lines.append("| Метрика | Значение |")
             lines.append("|---------|----------|")
-            lines.append(f"| Всего пакетов | {total} |")  # noqa: RUF001
+            lines.append(f"| Всего пакетов | {total} |")
             lines.append(f"| Время захвата | {duration:.2f}s |")
             lines.append(f"| Первый пакет | {first_ts} |")
             lines.append(f"| Последний пакет | {last_ts} |")
@@ -891,7 +891,7 @@ def register_analysis_tools(
                 for a in anomalies[:50]:
                     lines.append(f"| {a['frame']} | {a['type']} | {a['detail']} |")
             else:
-                lines.append("### Аномалии\n\nАномалий не обнаружено.")  # noqa: RUF001
+                lines.append("### Аномалии\n\nАномалий не обнаружено.")
 
             md = "\n".join(lines)
             return fmt.truncate_output(fmt.format_success(md, title="Deep Packet Analysis"))
