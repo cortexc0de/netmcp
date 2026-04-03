@@ -25,7 +25,10 @@ from netmcp.tools.analysis import register_analysis_tools
 from netmcp.tools.capture import register_capture_tools
 from netmcp.tools.credentials import register_credential_tools
 from netmcp.tools.export_tools import register_export_tools
+from netmcp.tools.flow_tls import register_flow_tls_tools
 from netmcp.tools.nmap_scan import register_nmap_tools
+from netmcp.tools.pcap_tools import register_pcap_tools
+from netmcp.tools.profiles import register_profile_tools
 from netmcp.tools.streaming import register_streaming_tools
 from netmcp.tools.streams import register_stream_tools
 from netmcp.tools.threat_intel import register_threat_tools
@@ -86,6 +89,9 @@ def create_server(host: str = "0.0.0.0", port: int = 8080) -> FastMCP:
         register_credential_tools(mcp, tshark, fmt, sec)
         register_threat_tools(mcp, tshark, threat, fmt, sec)
         register_streaming_tools(mcp, tshark, fmt, sec)
+        register_profile_tools(mcp, tshark, fmt, sec)
+        register_pcap_tools(mcp, tshark, fmt, sec)
+        register_flow_tls_tools(mcp, tshark, fmt, sec)
 
     if nmap.available:
         register_nmap_tools(mcp, nmap, fmt, sec)

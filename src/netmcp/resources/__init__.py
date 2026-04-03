@@ -86,34 +86,11 @@ def register_resources(
             "tshark_available": tshark.tshark_path is not None,
             "tshark_path": tshark.tshark_path,
             "nmap_available": nmap.available,
-            "tools": [
-                "get_network_interfaces",
-                "capture_live_packets",
-                "quick_capture",
-                "save_capture_to_file",
-                "analyze_pcap_file",
-                "get_protocol_statistics",
-                "get_capture_file_info",
-                "capture_targeted_traffic",
-                "analyze_http_traffic",
-                "analyze_http_headers",
-                "detect_network_protocols",
-                "geoip_lookup",
-                "follow_tcp_stream",
-                "follow_udp_stream",
-                "list_tcp_streams",
-                "export_packets_json",
-                "export_packets_csv",
-                "convert_pcap_format",
-                "nmap_port_scan",
-                "nmap_service_detection",
-                "nmap_os_detection",
-                "nmap_vulnerability_scan",
-                "nmap_quick_scan",
-                "nmap_comprehensive_scan",
-                "check_ip_threat_intel",
-                "scan_capture_for_threats",
-                "extract_credentials",
-            ],
+            "tools": (
+                list(mcp._tool_manager._tools.keys())
+                if hasattr(mcp, "_tool_manager")
+                and hasattr(mcp._tool_manager, "_tools")
+                else []
+            ),
         }
         return fmt.format_json(info)
